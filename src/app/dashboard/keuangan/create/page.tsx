@@ -1,0 +1,244 @@
+"use client";
+
+import { useState, useMemo } from "react";
+import { useRouter } from "next/navigation";
+import { 
+  ArrowLeft, 
+  Plus, 
+  Trash2, 
+  Calculator, 
+  FileText, 
+  Percent,
+  ChevronDown
+} from "lucide-react";
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { 
+  Table, 
+  TableBody, 
+  TableCell, 
+  TableHead, 
+  TableHeader, 
+  TableRow 
+} from "@/components/ui/table";
+import { 
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from "@/components/ui/dialog";
+
+type LineItem = {
+  id: string;
+  description: string;
+  amount: number;
+  isTaxable: boolean;
+};
+
+export default function CreateInvoicePage() {
+  const router = useRouter();
+  
+  // Simulation of "Semi-automatic" pre-fill
+  const [items, setItems] = useState<LineItem[]>([
+    { id: "1", description: "Jasa Pembuatan Akta Pendirian PT", amount: 10000000, isTaxable: true },
+    { id: "2", description: "PNBP & Legalisasi", amount: 500000, isTaxable: false },
+  ]);
+
+  const [date, setDate] = useState("2026-04-14");
+  const [dueDate, setDueDate] = useState("2026-04-21");
+
+  // Automatic Calculation (PPN 11%)
+  const subtotal = useMemo(() => items.reduce((sum, item) => sum + item.amount, 0), [items]);
+  const taxableAmount = useMemo(() => items.filter(i => i.isTaxable).reduce((sum, item) => sum + item.amount, 0), [items]);
+  const ppn = useMemo(() => taxableAmount * 0.11, [taxableAmount]);
+  const total = useMemo(() => subtotal + ppn, [subtotal, ppn]);
+
+  const addItem = () => {
+    setItems([...items, { id: Math.random().toString(), description: "", amount: 0, isTaxable: true }]);
+  };
+
+  const removeItem = (id: string) => {
+    setItems(items.filter(i => i.id !== id));
+  };
+
+  const updateItem = (id: string, field: keyof LineItem, value: any) => {
+    setItems(items.map(i => i.id === id ? { ...i, [field]: value } : i));
+  };
+
+  return (
+    <div className="max-w-5xl mx-auto flex flex-col gap-8 pb-20">
+      <div className="flex justify-between items-center">
+        <Button variant="ghost" className="gap-2 font-bold text-slate-500" onClick={() => router.back()}>
+          <ArrowLeft className="h-4 w-4" /> Kembali
+        </Button>
+        <div className="flex gap-3">
+           <Button variant="outline" className="font-bold border-slate-200">Simpan Draf</Button>
+           <Button className="bg-orange-500 hover:bg-orange-600 font-bold px-8">Terbitkan Invoice</Button>
+        </div>
+      </div>
+
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+        <div className="lg:col-span-2 space-y-8">
+          {/* Main Info */}
+          <Card className="border-none shadow-sm bg-white overflow-hidden">
+            <CardHeader className="bg-slate-50/50 border-b border-slate-100 flex flex-row items-center justify-between">
+              <div>
+                <CardTitle className="text-xl font-bold">Detail Penagihan</CardTitle>
+                <CardDescription>Nomor Invoice akan di-generate otomatis.</CardDescription>
+              </div>
+              <Dialog>
+                <DialogTrigger render={
+                  <Button variant="outline" size="sm" className="gap-2 bg-white font-bold border-slate-200">
+                    <FileText className="h-4 w-4" /> Hubungkan Akta (Opsional)
+                  </Button>
+                } />
+                <DialogContent>
+                  <DialogHeader>
+                    <DialogTitle>Pilih Akta Aktif</DialogTitle>
+                  </DialogHeader>
+                  <div className="py-4 space-y-2">
+                    {[1, 2, 3].map(i => (
+                      <div key={i} className="p-3 border rounded-xl hover:bg-slate-50 cursor-pointer transition-colors border-slate-100">
+                        <p className="font-bold text-sm">Akta Pendirian PT Sahabat Maju</p>
+                        <p className="text-xs text-slate-500">Dibuat oleh: Budi (Notaris) • 14/04/2026</p>
+                      </div>
+                    ))}
+                  </div>
+                </DialogContent>
+              </Dialog>
+            </CardHeader>
+            <CardContent className="pt-8 space-y-6">
+              <div className="grid grid-cols-2 gap-6">
+                <div className="space-y-2">
+                  <label className="text-xs font-bold uppercase tracking-wider text-slate-500">Tanggal Invoice</label>
+                  <Input type="date" value={date} onChange={e => setDate(e.target.value)} className="rounded-xl border-slate-200" />
+                </div>
+                <div className="space-y-2">
+                  <label className="text-xs font-bold uppercase tracking-wider text-slate-500">Jatuh Tempo</label>
+                  <Input type="date" value={dueDate} onChange={e => setDueDate(e.target.value)} className="rounded-xl border-slate-200" />
+                </div>
+              </div>
+              <div className="space-y-2">
+                <label className="text-xs font-bold uppercase tracking-wider text-slate-500">Pilih Klien</label>
+                <div className="relative">
+                   <Input placeholder="Cari klien..." className="rounded-xl border-slate-200" value="PT Maju Bersama (Bapak Ahmad)" />
+                   <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+
+          {/* Line Items */}
+          <Card className="border-none shadow-sm bg-white overflow-hidden">
+            <CardHeader>
+               <div className="flex justify-between items-center">
+                  <CardTitle className="text-lg font-bold">Rincian Komponen Biaya</CardTitle>
+                  <Button variant="ghost" size="sm" className="text-orange-600 font-bold gap-1 hover:bg-orange-50" onClick={addItem}>
+                    <Plus className="h-4 w-4" /> Tambah Baris
+                  </Button>
+               </div>
+            </CardHeader>
+            <CardContent className="p-0 border-t border-slate-50">
+              <Table>
+                <TableHeader>
+                  <TableRow className="bg-slate-50/50 border-none">
+                    <TableHead className="px-6 py-4 text-xs font-bold uppercase tracking-widest text-slate-400">Deskripsi Layanan</TableHead>
+                    <TableHead className="w-40 text-xs font-bold uppercase tracking-widest text-slate-400">Harga (Rp)</TableHead>
+                    <TableHead className="w-20 text-xs font-bold uppercase tracking-widest text-slate-400">PPN?</TableHead>
+                    <TableHead className="w-10 px-6"></TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {items.map((item) => (
+                    <TableRow key={item.id} className="border-b border-slate-50 last:border-0">
+                      <TableCell className="px-6 py-4">
+                        <Input 
+                          value={item.description} 
+                          onChange={e => updateItem(item.id, "description", e.target.value)}
+                          className="border-none bg-transparent shadow-none px-0 focus-visible:ring-0 font-medium placeholder:text-slate-300"
+                          placeholder="Masukkan nama layanan..."
+                        />
+                      </TableCell>
+                      <TableCell>
+                        <Input 
+                          type="number"
+                          value={item.amount} 
+                          onChange={e => updateItem(item.id, "amount", parseFloat(e.target.value) || 0)}
+                          className="border-none bg-transparent shadow-none px-0 focus-visible:ring-0 font-bold"
+                        />
+                      </TableCell>
+                      <TableCell className="text-center">
+                        <input 
+                          type="checkbox" 
+                          checked={item.isTaxable} 
+                          onChange={e => updateItem(item.id, "isTaxable", e.target.checked)}
+                          className="h-4 w-4 rounded border-slate-300 text-orange-500 focus:ring-orange-500" 
+                        />
+                      </TableCell>
+                      <TableCell className="px-6">
+                        <Button variant="ghost" size="icon" className="h-8 w-8 text-slate-300 hover:text-red-500 transition-colors" onClick={() => removeItem(item.id)}>
+                          <Trash2 className="h-4 w-4" />
+                        </Button>
+                      </TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+            </CardContent>
+          </Card>
+        </div>
+
+        {/* Sidebar Summary */}
+        <div className="space-y-6">
+          <Card className="border-none shadow-xl bg-slate-900 text-white overflow-hidden sticky top-8">
+            <CardHeader className="bg-slate-800/50">
+               <CardTitle className="text-sm font-bold uppercase tracking-widest text-slate-400 flex items-center gap-2">
+                 <Calculator className="h-4 w-4" /> Ringkasan Tagihan
+               </CardTitle>
+            </CardHeader>
+            <CardContent className="pt-8 space-y-6">
+               <div className="space-y-4">
+                  <div className="flex justify-between text-sm font-medium">
+                    <span className="text-slate-400">Subtotal</span>
+                    <span className="font-bold">Rp {subtotal.toLocaleString()}</span>
+                  </div>
+                  <div className="flex justify-between text-sm font-medium">
+                    <span className="text-slate-400 flex items-center gap-1">
+                      <Percent className="h-3 w-3" /> Pajak (PPN 11%)
+                    </span>
+                    <span className="font-bold text-orange-400">Rp {ppn.toLocaleString()}</span>
+                  </div>
+               </div>
+               <div className="h-px bg-slate-800 w-full" />
+               <div className="flex justify-between items-center group">
+                  <span className="text-sm font-bold uppercase tracking-widest text-slate-500">Total Akhir</span>
+                  <span className="text-3xl font-bold italic tracking-tight text-white group-hover:text-orange-400 transition-colors">Rp {total.toLocaleString()}</span>
+               </div>
+               
+               <div className="pt-4">
+                  <div className="p-4 rounded-xl bg-slate-800/50 border border-slate-700 space-y-2">
+                    <p className="text-[10px] font-bold uppercase text-slate-500 tracking-widest">Catatan Penagihan</p>
+                    <textarea 
+                      className="w-full bg-transparent border-none text-xs font-medium text-slate-300 focus:ring-0 p-0 min-h-[60px]"
+                      placeholder="Masukkan catatan tambahan untuk klien..."
+                      defaultValue="Terima kasih atas kepercayaan Anda menggunakan jasa kanto Notaris kami."
+                    />
+                  </div>
+               </div>
+            </CardContent>
+          </Card>
+          
+          <div className="p-6 rounded-2xl bg-orange-50 border border-orange-100 flex gap-4">
+             <Calculator className="h-6 w-6 text-orange-600 shrink-0" />
+             <div>
+                <p className="font-bold text-slate-900 text-sm">Validasi Otomatis</p>
+                <p className="text-xs text-slate-600 mt-1 font-medium leading-relaxed">Sistem akan otomatis menghitung PPN 11% hanya pada item yang Anda tandai sebagai objek pajak.</p>
+             </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
