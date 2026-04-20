@@ -74,7 +74,7 @@ export default function CreateClientPage() {
           });
         }, 400);
 
-        const response = await fetch('http://localhost:3001/api/ocr/ktp', {
+        const response = await fetch('/api/ocr/ktp', {
           method: 'POST',
           body: formDataObj,
         });
@@ -134,7 +134,7 @@ export default function CreateClientPage() {
         });
       }, 400);
 
-      const response = await fetch('http://localhost:3001/api/ocr/npwp', {
+      const response = await fetch('/api/ocr/npwp', {
         method: 'POST',
         body: formDataObj,
       });
@@ -184,7 +184,7 @@ export default function CreateClientPage() {
 
     try {
       setErrors({});
-      const response = await fetch(`http://localhost:3001/api/clients?tenantId=${tenantId}`, {
+      const response = await fetch(`/api/clients?tenantId=${tenantId}`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',

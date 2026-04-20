@@ -2,74 +2,79 @@ import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
   async rewrites() {
+    const backendUrl = process.env.NEXT_PUBLIC_BACKEND_API_URL;
+    if (!backendUrl) {
+      console.warn("NEXT_PUBLIC_BACKEND_API_URL is not defined. Rewrites might fail.");
+      return [];
+    }
     return [
       {
         source: '/api/backauth/:path*',
-        destination: 'http://localhost:3001/api/backauth/:path*',
+        destination: `${backendUrl}/api/backauth/:path*`,
       },
       {
         source: '/api/subscription/:path*',
-        destination: 'http://localhost:3001/api/subscription/:path*',
+        destination: `${backendUrl}/api/subscription/:path*`,
       },
       {
         source: '/api/tenant/:path*',
-        destination: 'http://localhost:3001/api/tenant/:path*',
+        destination: `${backendUrl}/api/tenant/:path*`,
       },
       {
         source: '/api/google/:path*',
-        destination: 'http://localhost:3001/api/google/:path*',
+        destination: `${backendUrl}/api/google/:path*`,
       },
       {
         source: '/api/ocr/:path*',
-        destination: 'http://localhost:3001/api/ocr/:path*',
+        destination: `${backendUrl}/api/ocr/:path*`,
       },
       {
         source: '/api/gdocs/:path*',
-        destination: 'http://localhost:3001/api/gdocs/:path*',
+        destination: `${backendUrl}/api/gdocs/:path*`,
       },
       {
         source: '/api/deeds/:path*',
-        destination: 'http://localhost:3001/api/deeds/:path*',
+        destination: `${backendUrl}/api/deeds/:path*`,
       },
       {
         source: '/api/clients/:path*',
-        destination: 'http://localhost:3001/api/clients/:path*',
+        destination: `${backendUrl}/api/clients/:path*`,
       },
       {
         source: '/api/appointments/:path*',
-        destination: 'http://localhost:3001/api/appointments/:path*',
+        destination: `${backendUrl}/api/appointments/:path*`,
       },
       {
         source: '/api/repertorium/:path*',
-        destination: 'http://localhost:3001/api/repertorium/:path*',
+        destination: `${backendUrl}/api/repertorium/:path*`,
       },
       {
         source: '/api/admin/:path*',
-        destination: 'http://localhost:3001/api/admin/:path*',
+        destination: `${backendUrl}/api/admin/:path*`,
       },
       {
         source: '/api/billing/:path*',
-        destination: 'http://localhost:3001/api/billing/:path*',
+        destination: `${backendUrl}/api/billing/:path*`,
       },
       {
         source: '/api/templates/:path*',
-        destination: 'http://localhost:3001/api/templates/:path*',
+        destination: `${backendUrl}/api/templates/:path*`,
       },
       {
         source: '/api/audit/:path*',
-        destination: 'http://localhost:3001/api/audit/:path*',
+        destination: `${backendUrl}/api/audit/:path*`,
       },
       {
         source: '/api/team/:path*',
-        destination: 'http://localhost:3001/api/team/:path*',
+        destination: `${backendUrl}/api/team/:path*`,
       },
       {
         source: '/api/tenant-teams/:path*',
-        destination: 'http://localhost:3001/api/tenant-teams/:path*',
+        destination: `${backendUrl}/api/tenant-teams/:path*`,
       },
       {
         source: '/api/profile/:path*',
-        destination: 'http://localhost:3001/api/profile/:path*',
+        destination: `${backendUrl}/api/profile/:path*`,
       },
     ];
   },

@@ -4,7 +4,11 @@ export async function POST(req: NextRequest) {
   try {
     const body = await req.json();
 
-    const backendRes = await fetch("http://localhost:3001/api/backauth/register", {
+    const backendUrl = process.env.NEXT_PUBLIC_BACKEND_API_URL;
+    if (!backendUrl) {
+      throw new Error("NEXT_PUBLIC_BACKEND_API_URL is not defined");
+    }
+    const backendRes = await fetch(`${backendUrl}/api/backauth/register`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify(body),

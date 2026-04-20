@@ -75,7 +75,7 @@ export default function ClientsPage() {
     if (!tenantId) return;
     try {
       setIsLoading(true);
-      const response = await fetch(`http://localhost:3001/api/clients?tenantId=${tenantId}`, {
+      const response = await fetch(`/api/clients?tenantId=${tenantId}`, {
         headers: { 'Authorization': `Bearer ${(session as any)?.backendToken}` }
       });
       const result = await response.json();
@@ -94,7 +94,7 @@ export default function ClientsPage() {
     const { id } = clientToDelete;
     const tenantId = (session?.user as any)?.tenantId;
     try {
-      const response = await fetch(`http://localhost:3001/api/clients/${id}?tenantId=${tenantId}`, {
+      const response = await fetch(`/api/clients/${id}?tenantId=${tenantId}`, {
         method: 'DELETE',
         headers: { 'Authorization': `Bearer ${(session as any)?.backendToken}` }
       });

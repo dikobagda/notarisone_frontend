@@ -38,7 +38,7 @@ export default function ClientDetailPage({ params }: { params: Promise<{ id: str
 
       try {
         setIsLoading(true);
-        const url = `http://localhost:3001/api/clients/${unwrappedParams.id}?tenantId=${tenantId}`;
+        const url = `/api/clients/${unwrappedParams.id}?tenantId=${tenantId}`;
         console.log("DEBUG Detail Fetch:", url);
         const response = await fetch(url, {
           headers: {

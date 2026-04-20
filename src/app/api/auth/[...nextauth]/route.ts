@@ -29,7 +29,11 @@ export const authOptions: NextAuthOptions = {
         }
 
         try {
-          const res = await fetch("http://localhost:3001/api/backauth/login", {
+          const backendUrl = process.env.NEXT_PUBLIC_BACKEND_API_URL;
+          if (!backendUrl) {
+            throw new Error("NEXT_PUBLIC_BACKEND_API_URL is not defined");
+          }
+          const res = await fetch(`${backendUrl}/api/backauth/login`, {
             method: "POST",
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify({
@@ -114,7 +118,12 @@ export const authOptions: NextAuthOptions = {
               }
 
               if (account.access_token) {
-                 fetch("http://localhost:3001/api/google/save-tokens", {
+                 const backendUrl = process.env.NEXT_PUBLIC_BACKEND_API_URL;
+                 if (!backendUrl) {
+                   console.error("NEXT_PUBLIC_BACKEND_API_URL is not defined for Google token save");
+                   return;
+                 }
+                 fetch(`${backendUrl}/api/google/save-tokens`, {
                    method: "POST",
                    headers: { "Content-Type": "application/json" },
                    body: JSON.stringify({

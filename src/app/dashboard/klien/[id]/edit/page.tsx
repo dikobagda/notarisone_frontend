@@ -65,7 +65,7 @@ export default function EditClientPage({ params }: { params: Promise<{ id: strin
 
       try {
         setIsInitialLoading(true);
-        const url = `http://localhost:3001/api/clients/${unwrappedParams.id}?tenantId=${tenantId}`;
+        const url = `/api/clients/${unwrappedParams.id}?tenantId=${tenantId}`;
         console.log("DEBUG Edit Fetch:", url);
         
         const response = await fetch(url, {
@@ -126,7 +126,7 @@ export default function EditClientPage({ params }: { params: Promise<{ id: strin
         });
       }, 400);
 
-      const response = await fetch('http://localhost:3001/api/ocr/ktp', {
+      const response = await fetch('/api/ocr/ktp', {
         method: 'POST',
         body: formDataObj,
       });
@@ -185,7 +185,7 @@ export default function EditClientPage({ params }: { params: Promise<{ id: strin
         });
       }, 400);
 
-      const response = await fetch('http://localhost:3001/api/ocr/npwp', {
+      const response = await fetch('/api/ocr/npwp', {
         method: 'POST',
         body: formDataObj,
       });
@@ -235,7 +235,7 @@ export default function EditClientPage({ params }: { params: Promise<{ id: strin
 
     try {
       setErrors({});
-      const response = await fetch(`http://localhost:3001/api/clients/${unwrappedParams.id}?tenantId=${tenantId}`, {
+      const response = await fetch(`/api/clients/${unwrappedParams.id}?tenantId=${tenantId}`, {
         method: 'PATCH',
         headers: {
           'Content-Type': 'application/json',

@@ -38,7 +38,7 @@ function ResetPasswordForm() {
     }
 
     try {
-      const res = await fetch("http://localhost:3001/api/backauth/reset-password", {
+      const res = await fetch("/api/backauth/reset-password", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ token, newPassword: password }),
