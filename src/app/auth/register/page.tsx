@@ -165,7 +165,7 @@ function PlanCard({
 }) {
   const Icon = plan.icon;
 
-  const theme = {
+  const themes = {
     indigo: {
       base: "border-white/10",
       selected: "border-indigo-400 shadow-[0_0_30px_rgba(99,102,241,0.35)]",
@@ -210,7 +210,9 @@ function PlanCard({
       ring: "ring-2 ring-emerald-500/40",
       featureText: selected ? "text-white/80" : "text-white/45",
     },
-  }[plan.color];
+  };
+
+  const theme = themes[plan.color as keyof typeof themes] || themes.indigo;
 
   return (
     <button

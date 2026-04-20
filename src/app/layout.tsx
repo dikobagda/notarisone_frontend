@@ -14,6 +14,9 @@ const montserrat = Montserrat({
 export const metadata: Metadata = {
   title: "NotarisOne - Platform Manajemen Notaris Modern",
   description: "Solusi SaaS terpadu untuk manajemen akta, klien, dan protokol notaris di Indonesia.",
+  icons: {
+    icon: "/favicon.svg",
+  },
 };
 
 import { Toaster } from "sonner";
