@@ -121,7 +121,7 @@ export const authOptions: NextAuthOptions = {
                  const backendUrl = process.env.NEXT_PUBLIC_BACKEND_API_URL;
                  if (!backendUrl) {
                    console.error("NEXT_PUBLIC_BACKEND_API_URL is not defined for Google token save");
-                   return;
+                   return token;
                  }
                  fetch(`${backendUrl}/api/google/save-tokens`, {
                    method: "POST",
