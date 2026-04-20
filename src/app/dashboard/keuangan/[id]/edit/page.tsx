@@ -71,16 +71,16 @@ export default function EditInvoicePage() {
   // Fetch Lookups and Invoice Data
   useEffect(() => {
     const tenantId = (session?.user as any)?.tenantId;
-    if (!session?.backendToken || !tenantId || !params.id) return;
+    if (!(session as any)?.backendToken || !tenantId || !params.id) return;
 
     const fetchData = async () => {
       try {
         const [resClient, resDeeds, resInvoice] = await Promise.all([
-          fetch(`/api/clients?tenantId=${tenantId}`, { headers: { Authorization: `Bearer ${session.backendToken}` } }),
-          fetch(`/api/deeds?tenantId=${tenantId}`, { headers: { Authorization: `Bearer ${session.backendToken}` } }),
+          fetch(`/api/clients?tenantId=${tenantId}`, { headers: { Authorization: `Bearer ${(session as any).backendToken}` } }),
+          fetch(`/api/deeds?tenantId=${tenantId}`, { headers: { Authorization: `Bearer ${(session as any).backendToken}` } }),
           fetch(`/api/billing/invoices/${params.id}`, { 
             headers: { 
-              Authorization: `Bearer ${session.backendToken}`,
+              Authorization: `Bearer ${(session as any).backendToken}`,
               "X-Tenant-Id": tenantId
             } 
           })
@@ -186,7 +186,7 @@ export default function EditInvoicePage() {
         method: "PATCH",
         headers: {
           "Content-Type": "application/json",
-          Authorization: `Bearer ${session?.backendToken}`,
+          Authorization: `Bearer ${(session as any)?.backendToken}`,
           "X-Tenant-Id": tenantId
         },
         body: JSON.stringify(payload)
