@@ -383,11 +383,13 @@ function SubscriptionPageContent() {
       if (data.success && data.data.invoiceUrl) {
         window.location.href = data.data.invoiceUrl;
       } else {
+        alert("Checkout Failed Result: " + JSON.stringify(data, null, 2));
         toast.error(data.message || "Gagal membuat invoice. Cek log backend.");
         setLoadingTier(null);
       }
-    } catch (error) {
+    } catch (error: any) {
       console.error("Checkout Error:", error);
+      alert("Checkout Error Exception: " + String(error) + "\n\nDetails: " + JSON.stringify(error, null, 2));
       toast.error("Terjadi kesalahan jaringan. Pastikan backend di port 3001 menyala.");
       setLoadingTier(null);
     }
