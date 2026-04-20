@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useMemo, useEffect } from "react";
-import { useRouter } from "next/navigation";
+import { useRouter, useParams } from "next/navigation";
 import { useSession } from "next-auth/react";
 import {
   ArrowLeft,
@@ -16,7 +16,8 @@ import {
   ChevronDown,
   Briefcase,
   Search,
-  Check
+  Check,
+  Save
 } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -29,13 +30,6 @@ import {
   TableHeader,
   TableRow
 } from "@/components/ui/table";
-import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-  DialogDescription
-} from "@/components/ui/dialog";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
 
@@ -49,15 +43,13 @@ type LineItem = {
 type ClientData = { id: string; name: string; nik: string };
 type DeedData = { id: string; title: string; deedNumber: string };
 
-export default function CreateInvoicePage() {
+export default function EditInvoicePage() {
   const router = useRouter();
+  const params = useParams();
   const { data: session } = useSession();
 
-  const [items, setItems] = useState<LineItem[]>([
-    { id: "1", description: "Biaya Layanan & Konsultasi", amount: 0, isTaxable: true },
-  ]);
-
-  const [date, setDate] = useState(new Date().toISOString().split('T')[0]);
+  const [items, setItems] = useState<LineItem[]>([]);
+  const [date, setDate] = useState("");
   const [dueDate, setDueDate] = useState("");
 
   // Selection States
@@ -73,32 +65,60 @@ export default function CreateInvoicePage() {
   const [clientSearch, setClientSearch] = useState("");
   const [deedSearch, setDeedSearch] = useState("");
 
+  const [isLoading, setIsLoading] = useState(true);
   const [isSubmitting, setIsSubmitting] = useState(false);
 
-  // Fetch lookups
+  // Fetch Lookups and Invoice Data
   useEffect(() => {
     const tenantId = (session?.user as any)?.tenantId;
-    if (!session?.backendToken || !tenantId) return;
+    if (!session?.backendToken || !tenantId || !params.id) return;
 
-    const fetchLookups = async () => {
+    const fetchData = async () => {
       try {
-        const [resClient, resDeeds] = await Promise.all([
+        const [resClient, resDeeds, resInvoice] = await Promise.all([
           fetch(`/api/clients?tenantId=${tenantId}`, { headers: { Authorization: `Bearer ${session.backendToken}` } }),
-          fetch(`/api/deeds?tenantId=${tenantId}`, { headers: { Authorization: `Bearer ${session.backendToken}` } })
+          fetch(`/api/deeds?tenantId=${tenantId}`, { headers: { Authorization: `Bearer ${session.backendToken}` } }),
+          fetch(`/api/billing/invoices/${params.id}`, { 
+            headers: { 
+              Authorization: `Bearer ${session.backendToken}`,
+              "X-Tenant-Id": tenantId
+            } 
+          })
         ]);
 
         const clientData = await resClient.json();
         const deedData = await resDeeds.json();
+        const invoiceDataResult = await resInvoice.json();
 
         if (clientData.success) setClients(clientData.data);
         if (deedData.success) setDeeds(deedData.data);
+        
+        if (invoiceDataResult.success) {
+          const inv = invoiceDataResult.data;
+          setSelectedClientId(inv.clientId);
+          setSelectedDeedId(inv.deedId || "");
+          setIsDeedLinked(!!inv.deedId);
+          setDate(inv.createdAt.split('T')[0]);
+          setDueDate(inv.dueDate ? inv.dueDate.split('T')[0] : "");
+          setItems(inv.items.map((item: any) => ({
+            id: item.id,
+            description: item.description,
+            amount: Number(item.unitPrice),
+            isTaxable: item.taxable
+          })));
+        } else {
+          toast.error("Gagal memuat data invoice");
+          router.push("/dashboard/keuangan");
+        }
       } catch (err) {
-        toast.error("Gagal memuat list Klien & Akta");
+        toast.error("Terjadi kesalahan teknis");
+      } finally {
+        setIsLoading(false);
       }
     };
 
-    fetchLookups();
-  }, [session]);
+    fetchData();
+  }, [session, params.id]);
 
   const filteredClients = useMemo(() => {
     return clientSearch
@@ -123,7 +143,7 @@ export default function CreateInvoicePage() {
 
   const subtotal = useMemo(() => items.reduce((sum, item) => sum + item.amount, 0), [items]);
   const taxableAmount = useMemo(() => items.filter(i => i.isTaxable).reduce((sum, item) => sum + item.amount, 0), [items]);
-  const ppn = useMemo(() => taxableAmount * 0.11, [taxableAmount]); // 11% PPN
+  const ppn = useMemo(() => taxableAmount * 0.11, [taxableAmount]);
   const total = useMemo(() => subtotal + ppn, [subtotal, ppn]);
 
   const addItem = () => {
@@ -140,20 +160,20 @@ export default function CreateInvoicePage() {
 
   const handleSubmit = async () => {
     if (!selectedClientId) {
-      return toast.error("Klien wajib dipilih sebelum menerbitkan *invoice*");
+      return toast.error("Klien wajib dipilih");
     }
 
     const validItems = items.filter(i => i.description.trim() !== "" && i.amount > 0);
     if (validItems.length === 0) {
-      return toast.error("Maaf, rincian biaya tidak boleh kosong atau Rp.0");
+      return toast.error("Rincian biaya tidak boleh kosong");
     }
 
     setIsSubmitting(true);
     try {
       const payload = {
         clientId: selectedClientId,
-        deedId: isDeedLinked && selectedDeedId ? selectedDeedId : undefined,
-        dueDate: dueDate || undefined,
+        deedId: isDeedLinked && selectedDeedId ? selectedDeedId : null,
+        dueDate: dueDate || null,
         items: validItems.map(i => ({
           description: i.description,
           amount: i.amount,
@@ -162,8 +182,8 @@ export default function CreateInvoicePage() {
       };
 
       const tenantId = (session?.user as any)?.tenantId;
-      const res = await fetch("/api/billing/invoices", {
-        method: "POST",
+      const res = await fetch(`/api/billing/invoices/${params.id}`, {
+        method: "PATCH",
         headers: {
           "Content-Type": "application/json",
           Authorization: `Bearer ${session?.backendToken}`,
@@ -174,10 +194,10 @@ export default function CreateInvoicePage() {
 
       const result = await res.json();
       if (result.success) {
-        toast.success("Invoice berhasil direkam");
-        router.push("/dashboard/keuangan");
+        toast.success("Invoice berhasil diperbarui");
+        router.push(`/dashboard/keuangan/${params.id}`);
       } else {
-        toast.error(result.message || "Gagal menerbitkan invoice");
+        toast.error(result.message || "Gagal memperbarui invoice");
       }
     } catch (err) {
       toast.error("Terjadi kesalahan jaringan");
@@ -190,13 +210,22 @@ export default function CreateInvoicePage() {
     return new Intl.NumberFormat("id-ID", { style: "currency", currency: "IDR", minimumFractionDigits: 0 }).format(Number(val));
   };
 
+  if (isLoading) {
+    return (
+      <div className="h-[60vh] flex flex-col items-center justify-center gap-4 text-slate-400">
+        <Loader2 className="h-10 w-10 animate-spin" />
+        <p className="font-bold text-sm">Menyiapkan editor invoice...</p>
+      </div>
+    );
+  }
+
   return (
     <div className="max-w-5xl mx-auto flex flex-col gap-8 pb-32 animate-in fade-in slide-in-from-bottom-4 duration-700">
 
       {/* Header Bar */}
       <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 bg-white/50 backdrop-blur-xl p-4 rounded-3xl border border-white/50 shadow-sm">
         <Button variant="ghost" className="gap-2 font-bold text-slate-500 rounded-2xl hover:bg-white" onClick={() => router.back()}>
-          <ArrowLeft className="h-4 w-4" /> Batal & Kembali
+          <ArrowLeft className="h-4 w-4" /> Batal Perubahan
         </Button>
         <div className="flex gap-3 w-full md:w-auto">
           <Button
@@ -204,8 +233,8 @@ export default function CreateInvoicePage() {
             onClick={handleSubmit}
             disabled={isSubmitting}
           >
-            {isSubmitting ? <Loader2 className="h-5 w-5 animate-spin" /> : <Receipt className="h-5 w-5" />}
-            Terbitkan Invoice
+            {isSubmitting ? <Loader2 className="h-5 w-5 animate-spin" /> : <Save className="h-5 w-5" />}
+            Simpan Perubahan
           </Button>
         </div>
       </div>
@@ -214,7 +243,7 @@ export default function CreateInvoicePage() {
         <div className="lg:col-span-2 space-y-8">
 
           {/* Main Selectors */}
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6 bg-white p-5 rounded-3xl border border-slate-50 shadow-sm ring-1 ring-slate-100 overflow-visible">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6 bg-white p-6 rounded-3xl border border-slate-50 shadow-sm ring-1 ring-slate-100 overflow-visible">
 
             {/* Client Selector */}
             <div className="space-y-3">
@@ -393,7 +422,7 @@ export default function CreateInvoicePage() {
           </div>
 
           <Card className="border-0 shadow-sm bg-white overflow-hidden rounded-3xl ring-1 ring-slate-100">
-            <CardHeader className="bg-slate-50/50 border-b border-slate-50 p-5 flex flex-row items-center justify-between">
+            <CardHeader className="bg-slate-50/50 border-b border-slate-50 p-8 flex flex-row items-center justify-between">
               <div>
                 <CardTitle className="text-xl font-black text-slate-900">Rincian Komponen Biaya</CardTitle>
                 <CardDescription className="font-bold">Subtotal harga dihitung dalam IDR.</CardDescription>
@@ -498,7 +527,7 @@ export default function CreateInvoicePage() {
               <div className="pt-4 space-y-4">
                 <div className="space-y-2">
                   <label className="text-[10px] font-black uppercase tracking-wide text-slate-500">Tanggal Terbit</label>
-                  <Input type="date" value={date} onChange={e => setDate(e.target.value)} className="rounded-xl bg-white/5 border-white/10 text-white font-bold h-10 focus-visible:ring-orange-500" />
+                  <Input type="date" value={date} readOnly className="rounded-xl bg-white/5 border-white/10 text-white/40 font-bold h-10 focus-visible:ring-0 cursor-not-allowed" />
                 </div>
                 <div className="space-y-2">
                   <label className="text-[10px] font-black uppercase tracking-wide text-slate-500">Batas Jatuh Tempo (Opsional)</label>

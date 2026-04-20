@@ -1,65 +1,99 @@
 "use client";
 
 import React, { useState, useEffect, useRef } from "react";
-import { Bell, AlertCircle, FileText, UserPlus, Check, ChevronRight } from "lucide-react";
+import { 
+  Bell, 
+  AlertCircle, 
+  FileText, 
+  UserPlus, 
+  Check, 
+  ChevronRight,
+  Info,
+  AlertTriangle,
+  Loader2,
+  Clock
+} from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
+import { useSession } from "next-auth/react";
+import useSWR from "swr";
+import { useApiAuth } from "@/hooks/use-api-auth";
+import { formatDistanceToNow } from "date-fns";
+import { id as idLocale } from "date-fns/locale";
+import Link from "next/link";
+import { useRouter } from "next/navigation";
 
 interface NotificationItem {
   id: string;
   title: string;
   description: string;
-  time: string;
-  type: "URGENT" | "INFO" | "SUCCESS";
-  icon: any;
-  read: boolean;
+  type: "INFO" | "SUCCESS" | "URGENT" | "WARNING";
+  isRead: boolean;
+  actionUrl: string | null;
+  createdAt: string;
 }
+
+const fetcher = (url: string, headers: HeadersInit) =>
+  fetch(url, { headers }).then((res) => res.json());
 
 export function NotificationNav() {
   const [isOpen, setIsOpen] = useState(false);
   const dropdownRef = useRef<HTMLDivElement>(null);
+  const { status } = useSession();
+  const apiAuth = useApiAuth();
+  const router = useRouter();
 
-  // Mock Notifications
-  const [notifications] = useState<NotificationItem[]>([
-    {
-      id: "1",
-      title: "Akta Perlu Review",
-      description: "Pendirian PT Maju Jaya menunggu persetujuan Anda.",
-      time: "5m yang lalu",
-      type: "URGENT",
-      icon: AlertCircle,
-      read: false,
-    },
-    {
-      id: "2",
-      title: "Pendaftaran Client",
-      description: "Client baru 'Budi Santoso' telah didaftarkan ke sistem.",
-      time: "1j yang lalu",
-      type: "SUCCESS",
-      icon: UserPlus,
-      read: false,
-    },
-    {
-      id: "3",
-      title: "Update Keamanan",
-      description: "Sistem akan melakukan maintenance besok pukul 02:00 WIB.",
-      time: "2j yang lalu",
-      type: "INFO",
-      icon: FileText,
-      read: true,
-    },
-    {
-       id: "4",
-       title: "Tagihan Berhasil",
-       description: "Tagihan INV/2026/04/001 telah dibayar lunas.",
-       time: "1d yang lalu",
-       type: "SUCCESS",
-       icon: Check,
-       read: true,
+  const { data, mutate, isLoading } = useSWR(
+    status === "authenticated" ? ["/api/notifications", apiAuth.headers] : null,
+    ([url, headers]) => fetcher(process.env.NEXT_PUBLIC_API_URL + url, headers),
+    { refreshInterval: 60000 } // Refresh every minute
+  );
+
+  const notifications: NotificationItem[] = data?.data?.notifications || [];
+  const unreadCount = notifications.filter(n => !n.isRead).length;
+
+  const handleMarkAsRead = async (id: string, isRead: boolean, actionUrl?: string | null) => {
+    if (isRead) {
+      if (actionUrl) {
+        setIsOpen(false);
+        router.push(actionUrl);
+      }
+      return;
     }
-  ]);
 
-  const unreadCount = notifications.filter(n => !n.read).length;
+    try {
+      // Optimistic update
+      mutate(
+        { data: { notifications: notifications.map(n => n.id === id ? { ...n, isRead: true } : n) } },
+        false
+      );
+
+      const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/notifications/${id}/read`, {
+        method: "PATCH",
+        headers: apiAuth.headers,
+      });
+
+      if (!res.ok) throw new Error();
+      
+      mutate(); // Re-validate
+
+      if (actionUrl) {
+        setIsOpen(false);
+        router.push(actionUrl);
+      }
+    } catch (error) {
+      mutate(); // Revert
+    }
+  };
+
+  const getIcon = (type: string) => {
+    switch (type) {
+      case "URGENT": return <AlertCircle className="h-4 w-4" />;
+      case "WARNING": return <AlertTriangle className="h-4 w-4" />;
+      case "SUCCESS": return <Check className="h-4 w-4" />;
+      default: return <Info className="h-4 w-4" />;
+    }
+  };
 
   // Handle click outside to close
   useEffect(() => {
@@ -105,45 +139,53 @@ export function NotificationNav() {
           <div className="p-4 border-b border-slate-50 flex justify-between items-center bg-slate-50/50">
             <h3 className="text-sm font-black text-slate-900 uppercase tracking-widest">Notifikasi</h3>
             {unreadCount > 0 && (
-              <Badge className="bg-primary/10 text-primary border-none text-[10px] font-bold">
+              <Badge className="bg-destructive/10 text-destructive border-none text-[10px] font-black">
                 {unreadCount} Baru
               </Badge>
             )}
           </div>
 
           <div className="max-h-[400px] overflow-y-auto">
-            {notifications.length > 0 ? (
+            {isLoading ? (
+              <div className="p-12 text-center text-slate-400">
+                <Loader2 className="h-8 w-8 mx-auto mb-4 animate-spin text-primary/30" />
+                <p className="text-sm font-medium">Memuat data...</p>
+              </div>
+            ) : notifications.length > 0 ? (
               <div className="flex flex-col">
-                {notifications.map((n) => (
+                {notifications.slice(0, 8).map((n) => (
                   <div 
                     key={n.id} 
+                    onClick={() => handleMarkAsRead(n.id, n.isRead, n.actionUrl)}
                     className={cn(
                       "p-4 border-b border-slate-50 hover:bg-slate-50 transition-colors cursor-pointer group",
-                      !n.read && "bg-indigo-50/30"
+                      !n.isRead && "bg-indigo-50/30"
                     )}
                   >
                     <div className="flex gap-4">
                       <div className={cn(
-                        "h-10 w-10 rounded-xl flex items-center justify-center shrink-0 border",
+                        "h-10 w-10 rounded-xl flex items-center justify-center shrink-0 border transition-colors",
+                        n.isRead ? "bg-slate-50 text-slate-400 border-slate-100" :
                         n.type === "URGENT" ? "bg-red-50 text-red-600 border-red-100" :
+                        n.type === "WARNING" ? "bg-orange-50 text-orange-600 border-orange-100" :
                         n.type === "SUCCESS" ? "bg-emerald-50 text-emerald-600 border-emerald-100" :
                         "bg-blue-50 text-blue-600 border-blue-100"
                       )}>
-                        <n.icon className="h-5 w-5" />
+                        {getIcon(n.type)}
                       </div>
                       <div className="flex-1 min-w-0">
                         <div className="flex justify-between items-start gap-2">
                           <p className={cn(
                             "text-sm font-bold truncate transition-colors",
-                            !n.read ? "text-slate-900" : "text-slate-600 group-hover:text-primary"
+                            !n.isRead ? "text-slate-900" : "text-slate-600 group-hover:text-primary"
                           )}>
                             {n.title}
                           </p>
-                          <span className="text-[10px] text-slate-400 font-medium whitespace-nowrap mt-0.5 uppercase tracking-tighter">
-                            {n.time}
+                          <span className="text-[9px] text-slate-400 font-bold whitespace-nowrap mt-0.5 uppercase tracking-tighter">
+                            {formatDistanceToNow(new Date(n.createdAt), { addSuffix: true, locale: idLocale })}
                           </span>
                         </div>
-                        <p className="text-xs text-slate-500 font-medium leading-relaxed mt-1 line-clamp-2">
+                        <p className="text-[11px] text-slate-500 font-medium leading-relaxed mt-0.5 line-clamp-2">
                           {n.description}
                         </p>
                       </div>
@@ -159,14 +201,16 @@ export function NotificationNav() {
             )}
           </div>
 
-          <div className="p-3 border-t border-slate-50 bg-white">
-            <Button 
-              variant="ghost" 
-              className="w-full h-10 text-xs font-bold text-slate-500 hover:text-primary hover:bg-slate-50 transition-all rounded-xl gap-2 group"
-            >
-              Lihat Semua Notifikasi
-              <ChevronRight className="h-3 w-3 group-hover:translate-x-0.5 transition-transform" />
-            </Button>
+          <div className="p-3 border-t border-slate-100 bg-white">
+            <Link href="/dashboard/notifications" onClick={() => setIsOpen(false)}>
+              <Button 
+                variant="ghost" 
+                className="w-full h-10 text-xs font-bold text-slate-500 hover:text-primary hover:bg-indigo-50/50 transition-all rounded-xl gap-2 group"
+              >
+                Lihat Semua Notifikasi
+                <ChevronRight className="h-3 w-3 group-hover:translate-x-0.5 transition-transform" />
+              </Button>
+            </Link>
           </div>
         </div>
       )}
@@ -176,7 +220,7 @@ export function NotificationNav() {
 
 function Badge({ children, className }: { children: React.ReactNode; className?: string }) {
   return (
-    <span className={cn("inline-flex items-center rounded-full border px-2.5 py-0.5 text-xs font-semibold transition-colors focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2", className)}>
+    <span className={cn("inline-flex items-center rounded-full border px-2 py-0.5 text-xs font-semibold transition-colors focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2", className)}>
       {children}
     </span>
   );
