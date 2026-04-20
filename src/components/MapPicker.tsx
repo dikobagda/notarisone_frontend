@@ -15,7 +15,7 @@ const defaultCenter = {
   lng: 106.816666
 };
 
-const libraries: ("places" | "drawing" | "geometry" | "localContext" | "visualization")[] = ["places"];
+const libraries: ("places" | "drawing" | "geometry" | "visualization")[] = ["places"];
 
 interface MapPickerProps {
   onLocationSelect: (lat: number, lng: number, address: string) => void;
