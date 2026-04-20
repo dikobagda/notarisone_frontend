@@ -284,7 +284,7 @@ function PricingCard({
 }
 
 function SubscriptionPageContent() {
-  const { data: session } = useSession();
+  const { data: session, update: updateSession } = useSession();
   const searchParams = useSearchParams();
   const router = useRouter();
   const [loadingTier, setLoadingTier] = useState<string | null>(null);
@@ -310,7 +310,15 @@ function SubscriptionPageContent() {
 
         if (statusRes.ok && statusRes.headers.get("content-type")?.includes("application/json")) {
           const statusData = await statusRes.json();
-          if (statusData.success) setCurrentSubscription(statusData.data);
+          if (statusData.success) {
+             setCurrentSubscription(statusData.data);
+             // Synchronize NextAuth session with the actual backend status if there's a mismatch
+             const actualTier = statusData.data.subscription;
+             if (actualTier && actualTier !== (session as any).user?.plan) {
+               await updateSession({ plan: actualTier });
+               console.log(`[Session] Auto-updated NextAuth session plan to ${actualTier}`);
+             }
+          }
         }
 
         if (plansRes.ok && plansRes.headers.get("content-type")?.includes("application/json")) {
@@ -324,7 +332,7 @@ function SubscriptionPageContent() {
       }
     }
     fetchData();
-  }, [session]);
+  }, [session, updateSession]);
 
   useEffect(() => {
     const status = searchParams.get("status");
