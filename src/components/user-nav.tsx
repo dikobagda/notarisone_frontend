@@ -58,7 +58,7 @@ export function UserNav() {
     setIsUpgrading(true);
     try {
       const token = (session as any)?.backendToken;
-      const res = await fetch(`http://127.0.0.1:3001/api/subscription/checkout`, {
+      const res = await fetch(`/api/subscription/checkout`, {
         method: "POST",
         headers: { 
           "Content-Type": "application/json",
@@ -66,16 +66,25 @@ export function UserNav() {
         },
         body: JSON.stringify({ tier: nextTier }),
       });
+      
+      if (!res.ok || !res.headers.get("content-type")?.includes("application/json")) {
+        const text = await res.text();
+        console.error("[Upgrade] Non-JSON response:", text.substring(0, 100));
+        alert("Upgrade Failed: Non-JSON response from server. Check Console.");
+        throw new Error("Gagal menghubungi server pembayaran");
+      }
 
       const data = await res.json();
       if (data.success && data.data.invoiceUrl) {
         window.location.href = data.data.invoiceUrl;
       } else {
+        alert("Upgrade Failed Data: " + JSON.stringify(data, null, 2));
         toast.error(data.message || "Gagal membuat invoice.");
         setIsUpgrading(false);
       }
-    } catch (error) {
+    } catch (error: any) {
       console.error("Upgrade Error:", error);
+      alert("Upgrade Error Exception: " + String(error) + "\n\nDetails: " + JSON.stringify(error, null, 2));
       toast.error("Terjadi kesalahan jaringan.");
       setIsUpgrading(false);
     }
