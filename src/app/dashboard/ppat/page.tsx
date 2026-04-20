@@ -40,7 +40,7 @@ export default function PpatPage() {
   const [isLoading, setIsLoading] = useState(true);
   const [filterStatus, setFilterStatus] = useState<string>("all");
 
-  const [sortKey, setSortKey] = useState<'type' | 'parties' | 'date'>('date');
+  const [sortKey, setSortKey] = useState<'type' | 'parties' | 'date' | 'title'>('date');
   const [sortDir, setSortDir] = useState<'asc' | 'desc'>('desc');
   const [page, setPage] = useState(1);
   const PAGE_SIZE = 10;
@@ -60,7 +60,7 @@ export default function PpatPage() {
     PPAT: "Akta PPAT",
   };
 
-  const handleSort = (key: 'type' | 'parties' | 'date') => {
+  const handleSort = (key: 'type' | 'parties' | 'date' | 'title') => {
     if (sortKey === key) {
       setSortDir(d => d === 'asc' ? 'desc' : 'asc');
     } else {
@@ -137,7 +137,7 @@ export default function PpatPage() {
   const draftCount = ppatDeeds.filter(d => d.status === 'DRAFT').length;
   const pendingCount = ppatDeeds.filter(d => d.status === 'PENDING_CLIENT').length;
 
-  const SortIcon = ({ col }: { col: 'type' | 'parties' | 'date' }) => (
+  const SortIcon = ({ col }: { col: 'type' | 'parties' | 'date' | 'title' }) => (
     sortKey === col
       ? sortDir === 'asc'
         ? <ArrowUp className="h-3 w-3 text-emerald-500" />
@@ -265,7 +265,7 @@ export default function PpatPage() {
         {/* Table Header */}
         <div className="grid grid-cols-[1.8fr_1.4fr_2.6fr_1fr_0.5fr_auto] items-center px-6 py-3 bg-slate-50/60 border-b border-slate-100">
           <button onClick={() => handleSort('title')} className="flex items-center gap-1.5 text-[10px] font-black uppercase tracking-widest text-slate-400 hover:text-emerald-600 transition-colors cursor-pointer w-fit">
-            Judul Akta <SortIcon col="type" />
+            Judul Akta <SortIcon col="title" />
           </button>
           <button onClick={() => handleSort('parties')} className="flex items-center gap-1.5 text-[10px] font-black uppercase tracking-widest text-slate-400 hover:text-emerald-600 transition-colors cursor-pointer w-fit">
             Pemohon <SortIcon col="parties" />
