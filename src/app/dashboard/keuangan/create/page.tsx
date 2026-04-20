@@ -77,7 +77,7 @@ export default function CreateInvoicePage() {
 
   // Fetch lookups
   useEffect(() => {
-    const tenantId = (session?.user as any)?.tenantId;
+    const tenantId = session?.user?.tenantId;
     if (!session?.backendToken || !tenantId) return;
 
     const fetchLookups = async () => {
@@ -161,13 +161,13 @@ export default function CreateInvoicePage() {
         }))
       };
 
-      const tenantId = (session?.user as any)?.tenantId;
+      const tenantId = session?.user?.tenantId;
       const res = await fetch("/api/billing/invoices", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
           Authorization: `Bearer ${session?.backendToken}`,
-          "X-Tenant-Id": tenantId
+          "X-Tenant-Id": tenantId || ""
         },
         body: JSON.stringify(payload)
       });
