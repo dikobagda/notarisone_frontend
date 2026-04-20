@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, Suspense } from "react";
 import { useSession } from "next-auth/react";
 import { toast } from "sonner";
 import { useRouter, useSearchParams } from "next/navigation";
@@ -283,7 +283,7 @@ function PricingCard({
   );
 }
 
-export default function SubscriptionPage() {
+function SubscriptionPageContent() {
   const { data: session } = useSession();
   const searchParams = useSearchParams();
   const router = useRouter();
@@ -534,5 +534,22 @@ export default function SubscriptionPage() {
         </Button>
       </div>
     </div>
+  );
+}
+
+export default function SubscriptionPage() {
+  return (
+    <Suspense 
+      fallback={
+        <div className="flex flex-col items-center justify-center min-h-[60vh] gap-4">
+          <Loader2 className="h-10 w-10 animate-spin text-indigo-500" />
+          <p className="text-sm font-bold text-slate-500 uppercase tracking-widest">
+            Menyiapkan Halaman Langganan...
+          </p>
+        </div>
+      }
+    >
+      <SubscriptionPageContent />
+    </Suspense>
   );
 }
