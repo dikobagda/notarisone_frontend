@@ -31,7 +31,8 @@ import {
   FolderOpen,
   Map,
   MapPin,
-  ExternalLink
+  ExternalLink,
+  AlertCircle
 } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button, buttonVariants } from "@/components/ui/button";
