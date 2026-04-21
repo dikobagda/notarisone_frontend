@@ -22,7 +22,13 @@ import { toast } from "sonner";
 import { useApiAuth } from "@/hooks/use-api-auth";
 
 const fetcher = (url: string, headers: HeadersInit) =>
-  fetch(url, { headers }).then((res) => res.json());
+  fetch(url, { headers }).then(async (res) => {
+    if (!res.ok) {
+      const errorData = await res.json().catch(() => ({}));
+      throw new Error(errorData.message || "Gagal menghubungi server");
+    }
+    return res.json();
+  });
 
 interface Notification {
   id: string;
@@ -39,10 +45,17 @@ export default function NotificationsPage() {
   const apiAuth = useApiAuth();
   const [isMarkingAll, setIsMarkingAll] = useState(false);
   const [filter, setFilter] = useState<"ALL" | "UNREAD">("ALL");
+  
+  // Safe API URL helper to prevent "undefined" string concatenations
+  const getApiUrl = (path: string) => {
+    const base = process.env.NEXT_PUBLIC_BACKEND_API_URL;
+    if (!base || base === "undefined") return path;
+    return `${base}${path}`;
+  };
 
   const { data, error, isLoading, mutate } = useSWR(
     status === "authenticated" ? ["/api/notifications", apiAuth.headers] : null,
-    ([url, headers]) => fetcher(process.env.NEXT_PUBLIC_API_URL + url, headers),
+    ([url, headers]) => fetcher(getApiUrl(url), headers),
     { refreshInterval: 30000 } // Auto refresh every 30s
   );
 
@@ -59,7 +72,7 @@ export default function NotificationsPage() {
     
     setIsMarkingAll(true);
     try {
-      const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/notifications/read-all`, {
+      const res = await fetch(getApiUrl("/api/notifications/read-all"), {
         method: "PATCH",
         headers: apiAuth.headers,
       });
@@ -85,7 +98,7 @@ export default function NotificationsPage() {
         false 
       );
 
-      const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/notifications/${id}/read`, {
+      const res = await fetch(getApiUrl(`/api/notifications/${id}/read`), {
         method: "PATCH",
         headers: apiAuth.headers,
       });
