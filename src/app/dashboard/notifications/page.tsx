@@ -49,9 +49,8 @@ export default function NotificationsPage() {
   // Safe API URL helper to prevent "undefined" string concatenations
   const getApiUrl = (path: string) => {
     const base = process.env.NEXT_PUBLIC_BACKEND_API_URL;
-    const url = (!base || base === "undefined") ? path : `${base}${path}`;
-    console.log(`[Notification Debug] Requesting: ${url}, Base: ${base}`);
-    return url;
+    if (!base || base === "undefined") return path;
+    return `${base}${path}`;
   };
 
   const { data, error, isLoading, mutate } = useSWR(

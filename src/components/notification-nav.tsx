@@ -43,9 +43,16 @@ export function NotificationNav() {
   const apiAuth = useApiAuth();
   const router = useRouter();
 
+  // Safe API URL helper to prevent "undefined" string concatenations
+  const getApiUrl = (path: string) => {
+    const base = process.env.NEXT_PUBLIC_BACKEND_API_URL;
+    if (!base || base === "undefined") return path;
+    return `${base}${path}`;
+  };
+
   const { data, mutate, isLoading } = useSWR(
     status === "authenticated" ? ["/api/notifications", apiAuth.headers] : null,
-    ([url, headers]) => fetcher(process.env.NEXT_PUBLIC_API_URL + url, headers),
+    ([url, headers]) => fetcher(getApiUrl(url), headers),
     { refreshInterval: 60000 } // Refresh every minute
   );
 
@@ -68,7 +75,7 @@ export function NotificationNav() {
         false
       );
 
-      const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/notifications/${id}/read`, {
+      const res = await fetch(getApiUrl(`/api/notifications/${id}/read`), {
         method: "PATCH",
         headers: apiAuth.headers,
       });
