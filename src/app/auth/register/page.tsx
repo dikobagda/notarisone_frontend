@@ -407,15 +407,23 @@ function RegisterPageContent() {
 
       setSuccess(true);
       // Auto-login setelah register
-      await signIn("credentials", { email, password, redirect: false });
+      const signInResult = await signIn("credentials", { email, password, redirect: false });
       
+      if (signInResult?.error) {
+        // Login failed, redirect to login page instead
+        setTimeout(() => router.push("/auth/login"), 1500);
+        return;
+      }
+
+      // Wait a bit longer than default to ensure NextAuth session cookie is propagated
+      // Then redirect – subscription page will retry if token not yet ready
       setTimeout(() => {
         if (selectedPlan === "TRIAL") {
           router.push("/dashboard");
         } else {
           router.push(`/dashboard/subscription?checkout=true&plan=${selectedPlan}`);
         }
-      }, 1500);
+      }, 2500);
     } catch {
       setError("Tidak dapat terhubung ke server. Coba lagi.");
       setLoading(false);

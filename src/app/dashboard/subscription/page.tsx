@@ -352,6 +352,13 @@ function SubscriptionPageContent() {
     } else if (autoCheckout && targetPlan && session) {
       const hasTriggered = (window as any)._autoCheckoutTriggered;
       if (!hasTriggered) {
+        // Ensure backendToken is ready before triggering checkout
+        const token = (session as any)?.backendToken;
+        if (!token) {
+          // backendToken not yet populated (session just created after register)
+          // Let the dependency on session re-trigger this effect shortly
+          return;
+        }
         (window as any)._autoCheckoutTriggered = true;
         handleSelectPlan(targetPlan);
       }
@@ -372,6 +379,11 @@ function SubscriptionPageContent() {
     setLoadingTier(tier);
     try {
       const token = (session as any)?.backendToken;
+      if (!token) {
+        toast.error("Token sesi tidak tersedia. Silakan refresh halaman dan coba lagi.");
+        setLoadingTier(null);
+        return;
+      }
       const res = await fetch(`/api/subscription/checkout`, {
         method: "POST",
         headers: { 
