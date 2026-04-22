@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useCallback } from "react";
 import { useSession, signIn } from "next-auth/react";
+import { getApiUrl } from "@/lib/api";
 import Link from "next/link";
 import { format, startOfMonth, endOfMonth, eachDayOfInterval, isSameDay, isPast, addMonths, subMonths, parseISO, addHours, isToday, startOfWeek, endOfWeek } from "date-fns";
 import { id as localesId } from "date-fns/locale";
@@ -254,7 +255,8 @@ export default function CalendarPage() {
 
     try {
       setIsStatusLoading(true);
-      const res = await fetch("/api/google/status", {
+      const url = getApiUrl("/api/google/status");
+      const res = await fetch(url, {
         headers: { Authorization: `Bearer ${token}` }
       });
       const result = await res.json();
@@ -288,7 +290,9 @@ export default function CalendarPage() {
     if (!token) return;
 
     try {
-      const res = await fetch("/api/google/disconnect", {
+      setIsSubmitting(true);
+      const url = getApiUrl("/api/google/disconnect");
+      const res = await fetch(url, {
         method: "DELETE",
         headers: { Authorization: `Bearer ${token}` }
       });

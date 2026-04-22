@@ -3,6 +3,7 @@
 import { useState, useEffect, Suspense } from "react";
 import { useSearchParams, useRouter } from "next/navigation";
 import { signIn } from "next-auth/react";
+import { getApiUrl } from "@/lib/api";
 import { 
   Loader2, 
   Check, 
@@ -77,7 +78,7 @@ function JoinPageContent() {
 
     setSubmitting(true);
     try {
-      const res = await fetch("/api/backauth/register", {
+      const res = await fetch(getApiUrl("/api/backauth/register"), {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({

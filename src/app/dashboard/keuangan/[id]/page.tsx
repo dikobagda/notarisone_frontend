@@ -3,6 +3,7 @@
 import { useState, useEffect } from "react";
 import { useRouter, useParams } from "next/navigation";
 import { useSession } from "next-auth/react";
+import { getApiUrl } from "@/lib/api";
 import {
   ArrowLeft,
   Receipt,
@@ -97,7 +98,8 @@ export default function InvoiceDetailPage() {
     if (!tenantId || !params.id) return;
 
     try {
-      const res = await fetch(`/api/billing/invoices/${params.id}`, {
+      const url = getApiUrl(`/api/billing/invoices/${params.id}`);
+      const res = await fetch(url, {
         headers: {
           "X-Tenant-Id": tenantId,
           "Authorization": `Bearer ${(session as any)?.backendToken}`
@@ -120,7 +122,8 @@ export default function InvoiceDetailPage() {
     setIsDeleting(true);
     const tenantId = (session?.user as any)?.tenantId;
     try {
-      const res = await fetch(`/api/billing/invoices/${params.id}`, {
+      const url = getApiUrl(`/api/billing/invoices/${params.id}`);
+      const res = await fetch(url, {
         method: "DELETE",
         headers: {
           "X-Tenant-Id": tenantId,
@@ -158,7 +161,8 @@ export default function InvoiceDetailPage() {
 
     setIsSubmittingPayment(true);
     try {
-      const res = await fetch("/api/billing/payments", {
+      const url = getApiUrl("/api/billing/payments");
+      const res = await fetch(url, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",

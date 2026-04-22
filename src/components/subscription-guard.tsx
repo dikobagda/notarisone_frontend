@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import { useSession } from "next-auth/react";
 import { usePathname, useRouter } from "next/navigation";
+import { getApiUrl } from "@/lib/api";
 
 export function SubscriptionGuard() {
   const { data: session, status, update } = useSession();
@@ -27,16 +28,17 @@ export function SubscriptionGuard() {
       setIsChecking(true);
       try {
         const token = (session as any).backendToken;
-        // Fetch real status from backend using relative path (proxy)
-        const res = await fetch("/api/subscription/status", {
+        // Fetch real status from backend using absolute URL
+        const res = await fetch(getApiUrl("/api/subscription/status"), {
           headers: {
             "Authorization": `Bearer ${token}`
           }
         });
-
-        if (!res.ok || !res.headers.get("content-type")?.includes("application/json")) {
+        
+        const contentType = res.headers.get("content-type");
+        if (!res.ok || (contentType && !contentType.includes("application/json"))) {
           const text = await res.text();
-          console.error("[Guard] Non-JSON response from status API:", text.substring(0, 100));
+          console.error("[Guard] Unexpected response from status API:", text.substring(0, 100));
           return;
         }
 

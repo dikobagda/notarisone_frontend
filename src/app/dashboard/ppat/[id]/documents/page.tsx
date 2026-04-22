@@ -3,6 +3,7 @@
 import { useState, useEffect } from "react";
 import { useParams, useRouter } from "next/navigation";
 import { useSession, signIn } from "next-auth/react";
+import { getApiUrl } from "@/lib/api";
 import Link from "next/link";
 import { 
   ArrowLeft, 
@@ -62,12 +63,15 @@ export default function DocumentCenterPage() {
   const [isOpeningGDocs, setIsOpeningGDocs] = useState(false);
   const [isSyncingGDocs, setIsSyncingGDocs] = useState(false);
   const [isGoogleConnected, setIsGoogleConnected] = useState<boolean | null>(null);
+  const [isGoogleStatusLoading, setIsGoogleStatusLoading] = useState(false);
 
   const fetchGoogleStatus = async () => {
     const tenantId = (session?.user as any)?.tenantId;
     if (!tenantId) return;
     try {
-      const res = await fetch("/api/google/status", {
+      setIsGoogleStatusLoading(true);
+      const url = getApiUrl("/api/google/status");
+      const res = await fetch(url, {
         headers: { Authorization: `Bearer ${(session as any)?.backendToken}` }
       });
       const result = await res.json();

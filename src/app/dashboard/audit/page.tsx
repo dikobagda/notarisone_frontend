@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from 'react';
 import { useSession } from 'next-auth/react';
+import { getApiUrl } from '@/lib/api';
 import { 
   History, 
   Search, 
@@ -74,9 +75,16 @@ export default function AuditPage() {
     if (!tenantId) return;
     try {
       setIsLoading(true);
-      const response = await fetch(`/api/audit?tenantId=${tenantId}&limit=200`, {
+      const url = getApiUrl(`/api/audit?tenantId=${tenantId}&limit=200`);
+      const response = await fetch(url, {
         headers: { 'Authorization': `Bearer ${(session as any)?.backendToken}` }
       });
+      
+      const contentType = response.headers.get("content-type");
+      if (!response.ok || (contentType && !contentType.includes("application/json"))) {
+        throw new Error('Gagal memuat log aktivitas');
+      }
+      
       const result = await response.json();
       if (result.success) setLogs(result.data);
     } catch (error) {

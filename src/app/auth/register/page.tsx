@@ -3,21 +3,28 @@
 import { useState, useEffect, Suspense } from "react";
 import { useSearchParams, useRouter } from "next/navigation";
 import { signIn } from "next-auth/react";
+import { getApiUrl } from "@/lib/api";
 import {
   Check,
+  Loader2,
+  ShieldCheck,
+  Zap,
+  Building2,
+  User,
+  Mail,
+  Lock,
+  ArrowRight,
+  Activity,
+  Database,
+  Clock,
+  CheckCircle2,
   ChevronRight,
   ChevronLeft,
-  Loader2,
   Eye,
   EyeOff,
-  Zap,
-  Shield,
-  Building2,
-  Users,
   FileText,
   BarChart3,
   Star,
-  ArrowRight,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
@@ -54,7 +61,7 @@ const staticPlansMetadata = [
     priceNote: "per bulan",
     badge: "Terpopuler",
     color: "emerald",
-    icon: Users,
+    icon: User,
     features: [
       "1 Notaris & Staf",
       "Manajemen Akta Dasar",
@@ -75,7 +82,7 @@ const staticPlansMetadata = [
     priceNote: "per bulan",
     badge: null,
     color: "violet",
-    icon: Shield,
+    icon: ShieldCheck,
     features: [
       "5 Notaris & 20 Pegawai",
       "Akta tidak terbatas",
@@ -313,7 +320,7 @@ function RegisterPageContent() {
   useEffect(() => {
     async function fetchPlans() {
       try {
-        const res = await fetch("/api/subscription/plans");
+        const res = await fetch(getApiUrl("/api/subscription/plans"));
         if (res.ok) {
           const { data } = await res.json();
           // Merge dynamic prices into our metadata-rich PLANS
@@ -384,7 +391,7 @@ function RegisterPageContent() {
     setError("");
 
     try {
-      const res = await fetch("/api/backauth/register", {
+      const res = await fetch(getApiUrl("/api/backauth/register"), {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({

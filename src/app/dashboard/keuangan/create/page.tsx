@@ -3,6 +3,7 @@
 import { useState, useMemo, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { useSession } from "next-auth/react";
+import { getApiUrl } from "@/lib/api";
 import {
   ArrowLeft,
   Plus,
@@ -162,7 +163,7 @@ export default function CreateInvoicePage() {
       };
 
       const tenantId = session?.user?.tenantId;
-      const res = await fetch("/api/billing/invoices", {
+      const res = await fetch(getApiUrl("/api/billing/invoices"), {
         method: "POST",
         headers: {
           "Content-Type": "application/json",

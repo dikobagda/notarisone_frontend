@@ -28,6 +28,7 @@ import { Label } from "@/components/ui/label";
 import Link from "next/link";
 import { cn } from "@/lib/utils";
 import { signIn } from "next-auth/react";
+import { getApiUrl } from "@/lib/api";
 
 type Tab = "profile" | "security" | "office" | "google";
 
@@ -50,7 +51,8 @@ export default function SettingsPage() {
     if (!session?.backendToken) return;
     try {
       setIsLoading(true);
-      const res = await fetch("/api/profile", {
+      const url = getApiUrl("/api/profile");
+      const res = await fetch(url, {
         headers: { Authorization: `Bearer ${session.backendToken}` }
       });
       const result = await res.json();
@@ -76,7 +78,8 @@ export default function SettingsPage() {
     if (!session?.backendToken) return;
     try {
       setIsGoogleStatusLoading(true);
-      const res = await fetch("/api/google/status", {
+      const url = getApiUrl("/api/google/status");
+      const res = await fetch(url, {
         headers: { Authorization: `Bearer ${session.backendToken}` }
       });
       const result = await res.json();
@@ -108,7 +111,8 @@ export default function SettingsPage() {
     
     setIsSubmitting(true);
     try {
-      const res = await fetch("/api/google/disconnect", {
+      const url = getApiUrl("/api/google/disconnect");
+      const res = await fetch(url, {
         method: "DELETE",
         headers: { Authorization: `Bearer ${session?.backendToken}` }
       });
@@ -133,7 +137,8 @@ export default function SettingsPage() {
     setErrorMessage(null);
 
     try {
-      const res = await fetch("/api/profile", {
+      const url = getApiUrl("/api/profile");
+      const res = await fetch(url, {
         method: "PATCH",
         headers: {
           "Content-Type": "application/json",
@@ -171,7 +176,8 @@ export default function SettingsPage() {
     setErrorMessage(null);
 
     try {
-      const res = await fetch("/api/profile/password", {
+      const url = getApiUrl("/api/profile/password");
+      const res = await fetch(url, {
         method: "PATCH",
         headers: {
           "Content-Type": "application/json",
@@ -203,7 +209,8 @@ export default function SettingsPage() {
     setErrorMessage(null);
 
     try {
-      const res = await fetch("/api/profile/tenant", {
+      const url = getApiUrl("/api/profile/tenant");
+      const res = await fetch(url, {
         method: "PATCH",
         headers: {
           "Content-Type": "application/json",

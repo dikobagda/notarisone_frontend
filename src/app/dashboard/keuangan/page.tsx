@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from "react";
 import { useSession } from "next-auth/react";
+import { getApiUrl } from "@/lib/api";
 import { useRouter } from "next/navigation";
 import {
   TrendingUp,
@@ -91,7 +92,8 @@ export default function KeuanganDashboard() {
     if (!session?.backendToken || !tenantId) return;
     try {
       setIsLoading(true);
-      const res = await fetch("/api/billing/invoices", {
+      const url = getApiUrl(`/api/billing/invoices?tenantId=${tenantId}`);
+      const res = await fetch(url, {
         headers: {
           Authorization: `Bearer ${session.backendToken}`,
           "X-Tenant-Id": tenantId
@@ -132,7 +134,7 @@ export default function KeuanganDashboard() {
         method: "TRANSFER" // Default internal record method
       };
 
-      const res = await fetch("/api/billing/payments", {
+      const res = await fetch(getApiUrl("/api/billing/payments"), {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -161,7 +163,8 @@ export default function KeuanganDashboard() {
     if (!invoiceToDelete) return;
     setIsDeleting(true);
     try {
-      const res = await fetch(`/api/billing/invoices/${invoiceToDelete.id}`, {
+      const url = getApiUrl(`/api/billing/invoices/${invoiceToDelete.id}`);
+      const res = await fetch(url, {
         method: "DELETE",
         headers: {
           Authorization: `Bearer ${session?.backendToken}`,
