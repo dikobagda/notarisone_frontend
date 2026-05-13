@@ -16,6 +16,29 @@ import {
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
+import { CustomSelect } from "@/components/ui/custom-select";
+
+const TITLE_OPTIONS = [
+  { label: "Tuan", value: "Tuan" },
+  { label: "Nyonya", value: "Nyonya" },
+  { label: "Nona", value: "Nona" },
+  { label: "Bapak", value: "Bapak" },
+  { label: "Ibu", value: "Ibu" },
+  { label: "Sdr.", value: "Sdr" },
+  { label: "Sdri.", value: "Sdri" },
+];
+
+const GENDER_OPTIONS = [
+  { label: "Laki-laki", value: "LAKI_LAKI" },
+  { label: "Perempuan", value: "PEREMPUAN" },
+];
+
+const MARITAL_STATUS_OPTIONS = [
+  { label: "Belum Kawin", value: "BELUM_KAWIN" },
+  { label: "Kawin", value: "KAWIN" },
+  { label: "Cerai Hidup", value: "CERAI_HIDUP" },
+  { label: "Cerai Mati", value: "CERAI_MATI" },
+];
 
 export default function EditClientPage({ params }: { params: Promise<{ id: string }> }) {
   const unwrappedParams = use(params);
@@ -43,6 +66,9 @@ export default function EditClientPage({ params }: { params: Promise<{ id: strin
   const [showSuccess, setShowSuccess] = useState(false);
   const [formData, setFormData] = useState({
     name: "",
+    title: "",
+    gender: "",
+    maritalStatus: "",
     nik: "",
     npwp: "",
     pob: "",
@@ -78,6 +104,9 @@ export default function EditClientPage({ params }: { params: Promise<{ id: strin
           const c = result.data;
           setFormData({
             name: c.name || "",
+            title: c.title || "",
+            gender: c.gender || "",
+            maritalStatus: c.maritalStatus || "",
             nik: c.nik || "",
             npwp: c.npwp || "",
             pob: c.pob || "",
@@ -137,7 +166,7 @@ export default function EditClientPage({ params }: { params: Promise<{ id: strin
 
       if (result.success) {
         setOcrStatus("Data Berhasil Diekstrak!");
-        const { nik, name, pob, dob, address, ktpPath } = result.data;
+        const { nik, name, pob, dob, address, ktpPath, gender, maritalStatus } = result.data;
         const formatValue = (val: string) => val ? val.trim().toUpperCase() : "";
 
         setFormData(prev => ({
@@ -146,6 +175,8 @@ export default function EditClientPage({ params }: { params: Promise<{ id: strin
           name: name ? formatValue(name) : prev.name,
           pob: pob ? formatValue(pob) : prev.pob,
           dob: dob ? dob : prev.dob,
+          gender: gender || prev.gender,
+          maritalStatus: maritalStatus || prev.maritalStatus,
           address: address ? formatValue(address) : prev.address,
           ktpPath: ktpPath || prev.ktpPath
         }));
@@ -421,17 +452,42 @@ export default function EditClientPage({ params }: { params: Promise<{ id: strin
 
             {/* Form Fields - Same as Create page */}
             <div className="grid gap-6">
-                <div className="grid gap-2">
-                  <label className="text-[10px] font-black uppercase tracking-[0.15em] text-slate-500">Nama Lengkap (Sesuai KTP/NPWP) <span className="text-red-500">*</span></label>
-                  <Input 
-                    value={formData.name} 
-                    onChange={e => setFormData({...formData, name: e.target.value})}
-                    placeholder="Masukan nama lengkap..." 
-                    className={`rounded-xl border-slate-200 h-11 font-bold ${errors.name ? 'border-red-500 ring-1 ring-red-500' : ''}`}
+                <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
+                  <div className="md:col-span-2 grid gap-2">
+                    <label className="text-[10px] font-black uppercase tracking-[0.15em] text-slate-500">Nama Lengkap (Sesuai KTP/NPWP) <span className="text-red-500">*</span></label>
+                    <Input 
+                      value={formData.name} 
+                      onChange={e => setFormData({...formData, name: e.target.value})}
+                      placeholder="Masukan nama lengkap..." 
+                      className={`rounded-xl border-slate-200 h-11 font-bold ${errors.name ? 'border-red-500 ring-1 ring-red-500' : ''}`}
+                    />
+                    {errors.name && <p className="text-[10px] font-bold text-red-500 uppercase tracking-wider">{errors.name}</p>}
+                  </div>
+                  <CustomSelect 
+                    label="Sapaan (Title)"
+                    options={TITLE_OPTIONS}
+                    value={formData.title}
+                    onChange={val => setFormData({...formData, title: val})}
+                    placeholder="Pilih Title..."
                   />
-                  {errors.name && <p className="text-[10px] font-bold text-red-500 uppercase tracking-wider">{errors.name}</p>}
+                  <CustomSelect 
+                    label="Jenis Kelamin"
+                    options={GENDER_OPTIONS}
+                    value={formData.gender}
+                    onChange={val => setFormData({...formData, gender: val})}
+                    placeholder="Pilih Kelamin..."
+                  />
                 </div>
 
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                  <CustomSelect 
+                    label="Status Perkawinan"
+                    options={MARITAL_STATUS_OPTIONS}
+                    value={formData.maritalStatus}
+                    onChange={val => setFormData({...formData, maritalStatus: val})}
+                    placeholder="Pilih Status..."
+                  />
+                </div>
                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                  <div className="grid gap-2">
                    <label className="text-[10px] font-black uppercase tracking-[0.15em] text-slate-500">NIK (16 Digit)</label>

@@ -51,9 +51,9 @@ export function CustomSelect({
   };
 
   return (
-    <div className={cn("grid gap-1.5 w-full relative", className)} ref={containerRef}>
+    <div className={cn("grid gap-2 w-full relative", className)} ref={containerRef}>
       {label && (
-        <label className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-400 ml-1">
+        <label className="text-[10px] font-black uppercase tracking-[0.15em] text-slate-500 ml-1">
           {label}
         </label>
       )}
@@ -72,10 +72,10 @@ export function CustomSelect({
         <div className="flex items-center gap-3 truncate">
           {selectedOption?.icon && (
             <selectedOption.icon className="h-4 w-4 text-indigo-500 shrink-0" />
-          ) || (
-             selectedOption ? null : <span className="text-slate-400 font-medium">{placeholder}</span>
           )}
-          <span className="truncate">{selectedOption?.label || placeholder}</span>
+          <span className={cn("truncate", !selectedOption && "text-slate-400 font-medium")}>
+            {selectedOption?.label || placeholder}
+          </span>
         </div>
         <ChevronDown 
           className={cn(

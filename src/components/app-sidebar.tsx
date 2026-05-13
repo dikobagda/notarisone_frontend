@@ -1,5 +1,6 @@
 "use client";
 
+import { useState } from "react";
 import { usePathname } from "next/navigation";
 import { useSession, signOut } from "next-auth/react";
 import Link from "next/link";
@@ -28,15 +29,25 @@ const navItems = [
     section: "UTAMA",
     items: [
       { title: "Beranda", url: "/dashboard", icon: LayoutDashboard, exact: true },
+      { title: "Manajemen Klien", url: "/dashboard/klien", icon: Users, exact: false },
       { title: "Akta Notaris", url: "/dashboard/deeds", icon: FileText, exact: false },
       { title: "Akta PPAT", url: "/dashboard/ppat", icon: Map, exact: false },
+      { 
+        title: "Non-Akta", 
+        url: "/dashboard/non-akta", 
+        icon: Scale, 
+        exact: false,
+        subItems: [
+          { title: "Waarmerking", url: "/dashboard/non-akta/waarmerking" },
+          { title: "Legalisasi", url: "/dashboard/non-akta/legalisasi" },
+        ]
+      },
       { title: "Keuangan", url: "/dashboard/keuangan", icon: CreditCard, exact: false },
     ],
   },
   {
     section: "DATA & PENDUKUNG",
     items: [
-      { title: "Manajemen Klien", url: "/dashboard/klien", icon: Users, exact: false },
       { title: "Protokol Digital", url: "/dashboard/protokol", icon: BookOpen, exact: false },
       { title: "Manajemen Tim", url: "/dashboard/tim", icon: ShieldCheck, exact: false },
       { title: "Penjadwalan", url: "/dashboard/jadwal", icon: Calendar, exact: false },
@@ -56,6 +67,15 @@ export function AppSidebar() {
   const pathname = usePathname();
   const { data: session } = useSession();
   const { collapsed, toggle } = useSidebar();
+  const [expandedMenus, setExpandedMenus] = useState<string[]>([]);
+
+  const toggleExpand = (title: string, e: React.MouseEvent) => {
+    if (collapsed) return;
+    e.preventDefault();
+    setExpandedMenus(prev => 
+      prev.includes(title) ? prev.filter(t => t !== title) : [...prev, title]
+    );
+  };
 
   const user = session?.user;
   const userName = user?.name || "Pengguna";
@@ -123,7 +143,8 @@ export function AppSidebar() {
                 return (
                   <li key={item.url}>
                     <Link
-                      href={item.url}
+                      href={item.subItems ? "#" : item.url}
+                      onClick={(e) => item.subItems && toggleExpand(item.title, e)}
                       title={collapsed ? item.title : undefined}
                       className={cn(
                         "group flex items-center gap-3 py-2.5 rounded-xl text-sm font-semibold transition-all duration-200 relative",
@@ -152,12 +173,39 @@ export function AppSidebar() {
                           <span className="flex-1 leading-none whitespace-nowrap overflow-hidden">
                             {item.title}
                           </span>
-                          {isActive && (
-                            <ChevronRight className="h-3.5 w-3.5 text-indigo-400 shrink-0" />
+                          {(item as any).subItems && (
+                            <ChevronRight className={cn(
+                              "h-3.5 w-3.5 text-indigo-400 shrink-0 transition-transform duration-200",
+                              (isActive || expandedMenus.includes(item.title)) && "rotate-90"
+                            )} />
                           )}
                         </>
                       )}
                     </Link>
+
+                    {/* Render sub-items if expanded or parent is active */}
+                    {(isActive || expandedMenus.includes(item.title)) && !collapsed && (item as any).subItems && (
+                      <ul className="mt-1 ml-9 space-y-1 border-l-2 border-slate-100 pl-4 animate-in fade-in slide-in-from-top-1 duration-300">
+                        {(item as any).subItems.map((sub: any) => {
+                          const isSubActive = pathname === sub.url;
+                          return (
+                            <li key={sub.url}>
+                              <Link
+                                href={sub.url}
+                                className={cn(
+                                  "block py-2 text-xs font-bold transition-all",
+                                  isSubActive 
+                                    ? "text-indigo-600" 
+                                    : "text-slate-400 hover:text-slate-700"
+                                )}
+                              >
+                                {sub.title}
+                              </Link>
+                            </li>
+                          );
+                        })}
+                      </ul>
+                    )}
                   </li>
                 );
               })}

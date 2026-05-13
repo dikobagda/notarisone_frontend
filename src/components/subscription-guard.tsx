@@ -28,6 +28,12 @@ export function SubscriptionGuard() {
       setIsChecking(true);
       try {
         const token = (session as any).backendToken;
+        
+        if (!token) {
+          console.warn("[Guard] Backend token is missing. Skipping subscription check.");
+          return;
+        }
+
         // Fetch real status from backend using absolute URL
         const res = await fetch(getApiUrl("/api/subscription/status"), {
           headers: {
@@ -36,9 +42,13 @@ export function SubscriptionGuard() {
         });
         
         const contentType = res.headers.get("content-type");
-        if (!res.ok || (contentType && !contentType.includes("application/json"))) {
-          const text = await res.text();
-          console.error("[Guard] Unexpected response from status API:", text.substring(0, 100));
+        if (!res.ok) {
+          if (res.status === 401) {
+            console.error("[Guard] Session expired or invalid token. User might need to re-login.");
+          } else {
+            const text = await res.text();
+            console.error(`[Guard] API Error (${res.status}):`, text.substring(0, 100));
+          }
           return;
         }
 

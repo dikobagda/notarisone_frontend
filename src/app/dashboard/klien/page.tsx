@@ -146,12 +146,14 @@ export default function ClientsPage() {
             Kelola data pemohon, identitas, dan informasi kontak klien secara digital.
           </p>
         </div>
-        <Link href="/dashboard/klien/create">
-          <Button className="gap-2 bg-indigo-600 hover:bg-indigo-700 text-white font-bold h-11 px-6 rounded-xl shadow-lg shadow-indigo-500/20 cursor-pointer transition-all hover:scale-[1.02] active:scale-95">
-            <Plus className="h-4 w-4" />
-            Tambah Klien
-          </Button>
-        </Link>
+        <div className="flex gap-3">
+          <Link href="/dashboard/klien/create">
+            <Button className="gap-2 bg-indigo-600 hover:bg-indigo-700 text-white font-bold h-11 px-6 rounded-xl shadow-lg shadow-indigo-500/20 cursor-pointer transition-all hover:scale-[1.02] active:scale-95">
+              <Plus className="h-4 w-4" />
+              Tambah Klien
+            </Button>
+          </Link>
+        </div>
       </div>
 
       {/* Stats Row */}

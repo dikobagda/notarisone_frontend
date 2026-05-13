@@ -99,7 +99,10 @@ export default function ClientDetailPage({ params }: { params: Promise<{ id: str
             <ArrowLeft className="h-4 w-4" /> Kembali ke Daftar Klien
           </Button>
           <div>
-            <h2 className="text-4xl font-bold tracking-tight text-slate-900">{client.name}</h2>
+            <h2 className="text-4xl font-bold tracking-tight text-slate-900">
+              {client.title && <span className="text-slate-400 font-medium mr-2">{client.title}</span>}
+              {client.name}
+            </h2>
             <div className="text-slate-500 font-medium flex items-center gap-2 mt-1">
               <Badge variant="outline" className="text-primary border-primary/20 bg-primary/5 font-bold">Klien Perorangan</Badge>
               <span className="h-1 w-1 rounded-full bg-slate-300" />
@@ -135,6 +138,18 @@ export default function ClientDetailPage({ params }: { params: Promise<{ id: str
                     <p className="text-[10px] font-black uppercase text-slate-400 tracking-widest">NPWP</p>
                     <p className="text-lg font-bold text-slate-900 font-mono tracking-tighter">
                        {client.npwp || "Belum Terdaftar"}
+                    </p>
+                  </div>
+                  <div className="space-y-1.5">
+                    <p className="text-[10px] font-black uppercase text-slate-400 tracking-widest">Jenis Kelamin</p>
+                    <p className="text-sm font-bold text-slate-700 flex items-center gap-2 uppercase">
+                       {client.gender === 'LAKI_LAKI' ? 'Laki-laki' : client.gender === 'PEREMPUAN' ? 'Perempuan' : (client.gender || "-")}
+                    </p>
+                  </div>
+                  <div className="space-y-1.5">
+                    <p className="text-[10px] font-black uppercase text-slate-400 tracking-widest">Status Perkawinan</p>
+                    <p className="text-sm font-bold text-slate-700 flex items-center gap-2 uppercase">
+                       {client.maritalStatus?.replace(/_/g, ' ') || "-"}
                     </p>
                   </div>
                   <div className="space-y-1.5">
