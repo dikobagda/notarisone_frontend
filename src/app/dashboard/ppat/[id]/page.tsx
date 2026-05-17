@@ -49,7 +49,7 @@ export default function PpatDetailPage({ params: paramsPromise }: { params: Prom
   const params = use(paramsPromise);
   const router = useRouter();
   const { data: session } = useSession();
-  const [activeTab, setActiveTab] = useState<"info" | "objek" | "dokumen" | "audit">("info");
+  const [activeTab, setActiveTab] = useState<"info" | "pihak" | "objek" | "dokumen" | "audit">("info");
 
   const [deed, setDeed] = useState<any>(null);
   const [auditLogs, setAuditLogs] = useState<any[]>([]);
