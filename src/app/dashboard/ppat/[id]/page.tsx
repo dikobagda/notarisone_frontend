@@ -17,6 +17,7 @@ import {
   Clock,
   ExternalLink,
   ChevronRight,
+  ChevronDown,
   Edit2,
   Loader2,
   AlertCircle,
@@ -43,6 +44,7 @@ import { cn } from "@/lib/utils";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button, buttonVariants } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
+import { Input } from "@/components/ui/input";
 import MapView from "@/components/MapView";
 
 export default function PpatDetailPage({ params: paramsPromise }: { params: Promise<{ id: string }> }) {
