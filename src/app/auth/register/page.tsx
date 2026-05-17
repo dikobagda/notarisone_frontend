@@ -472,11 +472,11 @@ function RegisterPageContent() {
 
         <div className="relative z-10">
           <div className="flex items-center gap-3">
-            <div className="h-10 w-10 rounded-xl bg-gradient-to-br from-indigo-500 to-violet-600 flex items-center justify-center font-bold text-white text-xl">
-              N
+            <div className="h-10 w-10 rounded-xl overflow-hidden shadow-lg shadow-indigo-500/30">
+              <img src="/logo-penagraha.png" alt="Penagraha" className="h-full w-full object-contain" />
             </div>
             <div>
-              <span className="text-foreground font-bold text-xl">NotarisOne</span>
+              <span className="text-foreground font-bold text-xl">Penagraha</span>
               <p className="text-muted-foreground text-[10px] tracking-widest uppercase">Premium SaaS</p>
             </div>
           </div>
@@ -525,10 +525,10 @@ function RegisterPageContent() {
         )}>
           {/* Mobile Logo */}
           <div className="flex items-center gap-3 mb-8 xl:hidden">
-            <div className="h-9 w-9 rounded-xl bg-gradient-to-br from-indigo-500 to-violet-600 flex items-center justify-center font-bold text-white">
-              N
+            <div className="h-9 w-9 rounded-xl overflow-hidden shadow-lg shadow-indigo-500/30">
+              <img src="/logo-penagraha.png" alt="Penagraha" className="h-full w-full object-contain" />
             </div>
-            <span className="text-foreground font-bold text-lg">NotarisOne</span>
+            <span className="text-foreground font-bold text-lg">Penagraha</span>
           </div>
 
           <StepIndicator currentStep={step} />
@@ -826,7 +826,7 @@ function RegisterPageContent() {
                     </p>
                     <p className="text-muted-foreground text-xs mt-1 leading-relaxed">
                       {selectedPlan === "TRIAL"
-                        ? "Nikmati semua fitur sistem NotarisOne secara gratis selama 21 hari. Seluruh data akan dihapus otomatis jika tidak melakukan upgrade setelah masa trial habis."
+                        ? "Nikmati semua fitur sistem Penagraha secara gratis selama 21 hari. Seluruh data akan dihapus otomatis jika tidak melakukan upgrade setelah masa trial habis."
                         : `Anda telah memilih paket ${plans.find(p => p.id === selectedPlan)?.name}. Pembayaran akan diproses setelah pendaftaran.`}
                     </p>
                   </div>
@@ -853,7 +853,7 @@ function RegisterPageContent() {
                   <a href="/legal/privacy" target="_blank" className="text-primary hover:text-primary/80 underline font-medium">
                     Kebijakan Privasi
                   </a>{" "}
-                  NotarisOne
+                  Penagraha
                 </span>
               </label>
 

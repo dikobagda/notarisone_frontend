@@ -1,7 +1,8 @@
 "use client";
 
-import { useState, useEffect, useRef } from "react";
-import { useRouter } from "next/navigation";
+import { useState, useEffect, useRef, Suspense } from "react";
+import { useRouter, useSearchParams } from "next/navigation";
+import Link from "next/link";
 import { useSession } from "next-auth/react";
 import {
   ArrowLeft,
@@ -51,13 +52,19 @@ const PPAT_DEED_TYPES = [
   { label: "Akta Pemberian Hak Pakai (HP)", value: "HP" },
 ];
 
-export default function CreatePpatPage() {
+function CreatePpatForm() {
   const router = useRouter();
+  const searchParams = useSearchParams();
   const { data: session } = useSession();
   const [isSubmitting, setIsSubmitting] = useState(false);
 
+  // Query Params
+  const serviceRequestId = searchParams.get("serviceRequestId");
+  const initialClientId = searchParams.get("clientId");
+  const initialTitle = searchParams.get("title");
+
   // Form states
-  const [title, setTitle] = useState("");
+  const [title, setTitle] = useState(initialTitle || "");
   const [selectedType, setSelectedType] = useState("");
   const [isTypeDropdownOpen, setIsTypeDropdownOpen] = useState(false);
   const [typeSearch, setTypeSearch] = useState("");
@@ -75,6 +82,16 @@ export default function CreatePpatPage() {
   const [isDragging, setIsDragging] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
+  // Stakeholders (Pihak Terkait)
+  const [parties, setParties] = useState<any[]>([]);
+  const [newPartyName, setNewPartyName] = useState("");
+  const [newPartyRole, setNewPartyRole] = useState("");
+  const [isCustomRole, setIsCustomRole] = useState(false);
+  const [isRoleDropdownOpen, setIsRoleDropdownOpen] = useState(false);
+  const [isPartyClientDropdownOpen, setIsPartyClientDropdownOpen] = useState(false);
+  const [partyClientSearch, setPartyClientSearch] = useState("");
+  const [selectedPartyClientId, setSelectedPartyClientId] = useState<string | null>(null);
+
   // Client states
   const [selectedClient, setSelectedClient] = useState<any>(null);
   const [isClientDropdownOpen, setIsClientDropdownOpen] = useState(false);
@@ -91,6 +108,14 @@ export default function CreatePpatPage() {
     t.label.toLowerCase().includes(typeSearch.toLowerCase())
   );
 
+  const filteredPartyClients = partyClientSearch
+    ? allClients.filter(
+        (c) =>
+          c.name.toLowerCase().includes(partyClientSearch.toLowerCase()) ||
+          c.nik?.includes(partyClientSearch)
+      )
+    : allClients.slice(0, 6);
+
   const selectedTypeLabel = PPAT_DEED_TYPES.find(t => t.value === selectedType)?.label;
   const isFormComplete = title && selectedType && selectedClient && nop;
 
@@ -104,13 +129,20 @@ export default function CreatePpatPage() {
           headers: { 'Authorization': `Bearer ${(session as any)?.backendToken}` }
         });
         const result = await response.json();
-        if (result.success) setAllClients(result.data);
+        if (result.success) {
+          setAllClients(result.data);
+          // Handle initial client from query param
+          if (initialClientId) {
+            const client = result.data.find((c: any) => c.id === initialClientId);
+            if (client) setSelectedClient(client);
+          }
+        }
       } catch (error) {
         console.error("Error fetching clients:", error);
       }
     };
     fetchAllClients();
-  }, [session]);
+  }, [session, initialClientId]);
 
   const handleSubmit = async () => {
     if (!title || !selectedType || !selectedClient || !nop) {
@@ -128,6 +160,7 @@ export default function CreatePpatPage() {
         clientId: selectedClient.id || "temp-client-id",
         createdById: userId,
         targetFinalization: targetDate,
+        serviceRequestId: serviceRequestId || null,
         ppatData: {
           nop,
           jenisAkta: selectedType,    // Fallback copy inside ppatData for compatibility
@@ -139,7 +172,13 @@ export default function CreatePpatPage() {
         }
       }));
       if (uploadedFiles.length > 0) formData.append("draft", uploadedFiles[0]);
-      formData.append("stakeholders", JSON.stringify([]));
+      
+      const stakeholdersPayload = parties.map(p => ({
+        name: p.name,
+        role: p.role,
+        clientId: p.clientId
+      }));
+      formData.append("stakeholders", JSON.stringify(stakeholdersPayload));
 
       const response = await fetch(`/api/deeds?tenantId=${tenantId}`, {
         method: "POST",
@@ -156,6 +195,41 @@ export default function CreatePpatPage() {
       alert("Terjadi kesalahan sistem saat menyimpan data akta.");
     } finally {
       setIsSubmitting(false);
+    }
+  };
+
+  const addParty = (client?: any) => {
+    const name = client ? client.name : newPartyName.trim();
+    if (!name) return;
+    
+    const finalClientId = client ? client.id : (selectedPartyClientId || allClients.find(c => c.name === name)?.id || null);
+
+    setParties((prev) => [
+      ...prev,
+      { 
+        id: Date.now(), 
+        name: name, 
+        role: newPartyRole || "Pihak I", 
+        clientId: finalClientId
+      },
+    ]);
+    setIsCustomRole(false);
+    setNewPartyName("");
+    setNewPartyRole("");
+    setSelectedPartyClientId(null);
+    setPartyClientSearch("");
+    setIsPartyClientDropdownOpen(false);
+  };
+
+  const removeParty = (id: number) => setParties((prev) => prev.filter((p) => p.id !== id));
+
+  const GET_ROLES_FOR_TYPE = (type: string) => {
+    switch (type) {
+      case "AJB": return ["Penjual", "Pembeli", "Saksi", "Penerima Kuasa"];
+      case "HIBAH": return ["Pemberi Hibah", "Penerima Hibah", "Saksi"];
+      case "APHT": return ["Pemberi Hak Tanggungan", "Penerima Hak Tanggungan (Bank)", "Saksi"];
+      case "SKMHT": return ["Pemberi Kuasa", "Penerima Kuasa", "Saksi"];
+      default: return ["Pihak I", "Pihak II", "Pihak III", "Saksi"];
     }
   };
 
@@ -241,10 +315,10 @@ export default function CreatePpatPage() {
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        {/* ── Main Form (2/3) ── */}
+        {/* -- Main Form (2/3) -- */}
         <div className="lg:col-span-2 space-y-5">
 
-          {/* Section 1 — Pihak Utama */}
+          {/* Section 1 - Pihak Utama */}
           <div className="bg-white rounded-2xl border border-gray-100 shadow-sm overflow-visible">
             <div className="flex items-center justify-between px-6 py-4 border-b border-slate-100">
               <div className="flex items-center gap-3">
@@ -308,7 +382,18 @@ export default function CreatePpatPage() {
                         </div>
                         <div className="max-h-52 overflow-y-auto p-2">
                           {filteredClients.length === 0 ? (
-                            <div className="p-6 text-center text-xs font-bold text-slate-400">Klien tidak ditemukan</div>
+                            <div className="py-12 px-6 text-center space-y-4">
+                              <div className="flex flex-col items-center gap-2">
+                                <Users className="h-8 w-8 text-slate-200" />
+                                <p className="text-xs font-bold text-slate-400">Klien tidak ditemukan</p>
+                              </div>
+                              <Link 
+                                href="/dashboard/klien/create"
+                                className="inline-flex items-center gap-2 px-6 py-2.5 bg-emerald-600 text-white rounded-xl text-[10px] font-black uppercase tracking-widest hover:bg-emerald-700 transition-all shadow-lg shadow-emerald-200 cursor-pointer active:scale-95"
+                              >
+                                <Plus className="h-3 w-3" /> Tambah Klien Baru
+                              </Link>
+                            </div>
                           ) : filteredClients.map(c => (
                             <button
                               key={c.id}
@@ -333,7 +418,7 @@ export default function CreatePpatPage() {
             </div>
           </div>
 
-          {/* Section 2 — Metadata Akta */}
+          {/* Section 2 - Metadata Akta */}
           <div className="bg-white rounded-2xl border border-gray-100 shadow-sm overflow-visible">
             <div className="flex items-center gap-3 px-6 py-4 border-b border-slate-100">
               <div className="h-7 w-7 rounded-lg bg-emerald-50 border border-emerald-100 flex items-center justify-center">
@@ -428,7 +513,196 @@ export default function CreatePpatPage() {
             </div>
           </div>
 
-          {/* Section 3 — Detail Objek Pajak */}
+          {/* Section 4 - Pihak Terkait (Stakeholders) */}
+          <div className="bg-white rounded-2xl border border-gray-100 shadow-sm overflow-visible">
+            <div className="flex items-center justify-between px-6 py-4 border-b border-slate-100">
+              <div className="flex items-center gap-3">
+                <div className="h-7 w-7 rounded-lg bg-emerald-50 border border-emerald-100 flex items-center justify-center">
+                  <Users className="h-3.5 w-3.5 text-emerald-600" />
+                </div>
+                <span className="text-sm font-black text-slate-700">Pihak Terkait</span>
+                <span className="text-xs font-bold text-slate-400">(Stakeholders)</span>
+              </div>
+            </div>
+            <div className="p-6 space-y-6">
+              {parties.length === 0 ? (
+                <div className="flex items-start gap-4 p-5 rounded-2xl bg-slate-50 border border-slate-100">
+                  <div className="h-10 w-10 rounded-xl bg-white border border-slate-100 flex items-center justify-center text-slate-300 shrink-0">
+                    <Users className="h-5 w-5" />
+                  </div>
+                  <div>
+                    <p className="text-xs font-black text-slate-700 uppercase tracking-widest">Pihak Terkait Opsional</p>
+                    <p className="text-[11px] font-medium text-slate-400 leading-relaxed mt-0.5">
+                      Tambahkan pihak lain yang terlibat (misal: Penjual, Pembeli, Saksi, atau Pasangan) untuk manajemen dokumen yang lebih baik.
+                    </p>
+                  </div>
+                </div>
+              ) : (
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                  {parties.map((party) => (
+                    <div key={party.id} className="flex items-center justify-between p-4 bg-emerald-50/40 border border-emerald-100 rounded-2xl group transition-all hover:shadow-md">
+                      <div className="flex items-center gap-3">
+                        <div className="h-9 w-9 rounded-full bg-white border border-emerald-100 flex items-center justify-center font-black text-emerald-600 text-sm uppercase shadow-sm">
+                          {party.name.charAt(0)}
+                        </div>
+                        <div>
+                          <p className="font-black text-slate-900 text-sm">{party.name}</p>
+                          <Badge variant="outline" className="h-5 rounded-md bg-emerald-100/50 border-emerald-200 text-emerald-700 text-[8px] font-black uppercase tracking-wider">{party.role}</Badge>
+                        </div>
+                      </div>
+                      <button
+                        onClick={() => removeParty(party.id)}
+                        className="h-8 w-8 rounded-lg text-slate-300 hover:text-red-500 hover:bg-red-50 flex items-center justify-center transition-colors"
+                      >
+                        <X className="h-4 w-4" />
+                      </button>
+                    </div>
+                  ))}
+                </div>
+              )}
+
+              {/* Form tambah pihak */}
+              <div className="grid grid-cols-1 md:grid-cols-[1.5fr_1fr_auto] gap-3 items-end">
+                <div className="space-y-1.5 relative">
+                  <label className="text-[10px] font-black uppercase tracking-widest text-slate-400 ml-1">Nama Pihak (Cari Klien)</label>
+                  <div
+                    onClick={() => setIsPartyClientDropdownOpen(!isPartyClientDropdownOpen)}
+                    className={`flex h-10 items-center justify-between border px-3 text-xs cursor-pointer transition-all rounded-xl ${
+                      isPartyClientDropdownOpen
+                        ? "border-emerald-400 ring-2 ring-emerald-100"
+                        : "border-slate-200 hover:border-emerald-300"
+                    }`}
+                  >
+                    <span className={newPartyName ? "font-bold text-slate-900" : "text-slate-400 font-medium"}>
+                      {newPartyName || "Pilih dari daftar klien..."}
+                    </span>
+                    <ChevronDown className={`h-3.5 w-3.5 text-slate-400 transition-transform ${isPartyClientDropdownOpen ? "rotate-180 text-emerald-500" : ""}`} />
+                  </div>
+
+                  {isPartyClientDropdownOpen && (
+                    <>
+                      <div className="fixed inset-0 z-40" onClick={() => setIsPartyClientDropdownOpen(false)} />
+                      <div className="absolute bottom-full left-0 right-0 mb-1 bg-white border border-slate-100 rounded-2xl shadow-2xl z-50 overflow-hidden">
+                        <div className="p-2 border-b border-slate-50 flex items-center gap-2 px-3 bg-slate-50/60">
+                          <Search className="h-3 w-3 text-slate-400 shrink-0" />
+                          <input
+                            autoFocus
+                            type="text"
+                            placeholder="Ketik nama klien..."
+                            className="w-full bg-transparent border-none text-[11px] focus:outline-none placeholder:text-slate-300 font-medium text-slate-700 h-6"
+                            value={partyClientSearch}
+                            onChange={(e) => {
+                              setPartyClientSearch(e.target.value);
+                              setNewPartyName(e.target.value);
+                              setSelectedPartyClientId(null);
+                            }}
+                          />
+                        </div>
+                        <div className="max-h-40 overflow-y-auto p-1.5">
+                          {filteredPartyClients.length === 0 ? (
+                            <div className="py-8 px-4 text-center space-y-3">
+                              <p className="text-[10px] font-bold text-slate-400">Klien tidak ditemukan</p>
+                              <Link 
+                                href="/dashboard/klien/create"
+                                className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-slate-50 text-slate-600 rounded-lg text-[9px] font-black uppercase tracking-tight hover:bg-emerald-50 hover:text-emerald-700 transition-colors"
+                              >
+                                <Plus className="h-3 w-3" /> Tambah Klien
+                              </Link>
+                            </div>
+                          ) : (
+                            filteredPartyClients.map((c) => (
+                              <button
+                                key={c.id}
+                                className="w-full flex items-center gap-2 p-2 hover:bg-emerald-50 rounded-lg transition-colors text-left cursor-pointer"
+                                onClick={() => { 
+                                  setNewPartyName(c.name);
+                                  setSelectedPartyClientId(c.id);
+                                  setPartyClientSearch("");
+                                  setIsPartyClientDropdownOpen(false); 
+                                }}
+                              >
+                                <div className="h-6 w-6 rounded-full bg-slate-100 flex items-center justify-center font-bold text-slate-500 text-[10px] uppercase">
+                                  {c.name.charAt(0)}
+                                </div>
+                                <div>
+                                  <p className="font-bold text-slate-900 text-[11px]">{c.name}</p>
+                                  <p className="text-[9px] font-mono text-slate-400">NIK: {c.nik}</p>
+                                </div>
+                              </button>
+                            ))
+                          )}
+                        </div>
+                      </div>
+                    </>
+                  )}
+                </div>
+                <div className="space-y-1.5 relative">
+                  <label className="text-[10px] font-black uppercase tracking-widest text-slate-400 ml-1">Peran</label>
+                  {isCustomRole ? (
+                    <div className="relative">
+                      <Input
+                        autoFocus
+                        placeholder="Ketik peran..."
+                        className="rounded-xl border-emerald-400 h-10 text-xs font-bold pr-8"
+                        value={newPartyRole}
+                        onChange={(e) => setNewPartyRole(e.target.value)}
+                        onKeyDown={(e) => { if (e.key === "Escape") { setIsCustomRole(false); setNewPartyRole(""); } }}
+                      />
+                      <button onClick={() => { setIsCustomRole(false); setNewPartyRole(""); }} className="absolute right-2 top-1/2 -translate-y-1/2 text-slate-300 hover:text-slate-500">
+                        <X className="h-3.5 w-3.5" />
+                      </button>
+                    </div>
+                  ) : (
+                    <>
+                      <div
+                        onClick={() => setIsRoleDropdownOpen(!isRoleDropdownOpen)}
+                        className={`flex h-10 items-center justify-between border border-slate-200 px-3 text-xs font-bold text-slate-700 cursor-pointer rounded-xl hover:border-emerald-300 transition-colors bg-white ${isRoleDropdownOpen ? "ring-2 ring-emerald-50 border-emerald-400" : ""}`}
+                      >
+                        <span className={newPartyRole ? "text-slate-900" : "text-slate-400 font-medium"}>
+                          {newPartyRole || "Pilih peran..."}
+                        </span>
+                        <ChevronDown className="h-3 w-3 text-slate-400" />
+                      </div>
+                      {isRoleDropdownOpen && (
+                        <>
+                          <div className="fixed inset-0 z-40" onClick={() => setIsRoleDropdownOpen(false)} />
+                          <div className="absolute bottom-full left-0 right-0 mb-1 bg-white border border-slate-100 rounded-xl shadow-2xl z-50 overflow-hidden py-1">
+                            {GET_ROLES_FOR_TYPE(selectedType).map((role) => (
+                              <button
+                                key={role}
+                                className="w-full text-left px-3 py-2 text-[10px] font-bold text-slate-600 hover:bg-emerald-50 hover:text-emerald-700 transition-colors"
+                                onClick={() => { setNewPartyRole(role); setIsRoleDropdownOpen(false); }}
+                              >
+                                {role}
+                              </button>
+                            ))}
+                            <button
+                              className="w-full text-left px-3 py-2 text-[10px] font-black text-emerald-600 hover:bg-emerald-50 border-t border-slate-50 mt-1 flex items-center justify-between"
+                              onClick={() => { setIsCustomRole(true); setIsRoleDropdownOpen(false); setNewPartyRole(""); }}
+                            >
+                              Lainnya (Ketik Manual)
+                              <Plus className="h-3 w-3" />
+                            </button>
+                          </div>
+                        </>
+                      )}
+                    </>
+                  )}
+                </div>
+                <Button
+                  variant="outline"
+                  size="icon"
+                  disabled={!newPartyName.trim() || !newPartyRole.trim()}
+                  className="h-10 w-10 rounded-xl border-slate-200 hover:bg-emerald-50 hover:border-emerald-200 hover:text-emerald-600 cursor-pointer shrink-0 disabled:opacity-30"
+                  onClick={() => addParty()}
+                >
+                  <Plus className="h-4 w-4" />
+                </Button>
+              </div>
+            </div>
+          </div>
+
+          {/* Section 5 - Detail Objek Pajak */}
           <div className="bg-white rounded-2xl border border-gray-100 shadow-sm">
             <div className="flex items-center gap-3 px-6 py-4 border-b border-slate-100">
               <div className="h-7 w-7 rounded-lg bg-emerald-50 border border-emerald-100 flex items-center justify-center">
@@ -454,7 +728,7 @@ export default function CreatePpatPage() {
                 {/* Luas */}
                 <div className="space-y-2">
                   <label className="text-[10px] font-black uppercase tracking-widest text-slate-400 ml-1 flex items-center gap-1.5">
-                    <Ruler className="h-3 w-3" /> Luas (Tanah &amp; Bangunan)
+                    <Ruler className="h-3 w-3" /> Luas (Tanah & Bangunan)
                   </label>
                   <div className="grid grid-cols-2 gap-3">
                     <div className="relative">
@@ -552,7 +826,7 @@ export default function CreatePpatPage() {
             </div>
           </div>
 
-          {/* Section 4 — Dokumen Pendukung */}
+          {/* Section 4 - Dokumen Pendukung */}
           <div className="bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden">
             <div className="flex items-center justify-between px-6 py-4 border-b border-slate-100">
               <div className="flex items-center gap-3">
@@ -653,7 +927,6 @@ export default function CreatePpatPage() {
           </div>
         </div>
 
-        {/* ── Sidebar (1/3) ── */}
         <div className="space-y-4">
           {/* Progress Checklist */}
           <div className="rounded-2xl bg-gradient-to-br from-slate-900 to-emerald-950 text-white p-6 shadow-xl">
@@ -799,25 +1072,28 @@ export default function CreatePpatPage() {
                       `Template_${template.name.replace(/\s+/g, '_')}.docx`,
                       { type: "application/vnd.openxmlformats-officedocument.wordprocessingml.document" }
                     );
-                    setUploadedFiles(prev => [...prev, dummyFile]);
+                    setUploadedFiles([dummyFile]);
                   }}
                 >
                   <div>
-                    <span className="text-sm font-black text-slate-800 group-hover:text-emerald-700 block">{template.name}</span>
-                    <span className="text-[10px] font-bold text-slate-400 group-hover:text-emerald-600/70 mt-0.5 block">{template.desc}</span>
+                    <p className="font-bold text-slate-800 text-sm">{template.name}</p>
+                    <p className="text-[10px] text-slate-400 font-medium mt-0.5">{template.desc}</p>
                   </div>
-                  <Plus className="h-4 w-4 text-slate-300 group-hover:text-emerald-500 transition-colors shrink-0" />
+                  <Plus className="h-4 w-4 text-slate-200 group-hover:text-emerald-500 transition-colors" />
                 </button>
               ))}
             </div>
           </div>
-          <div className="p-5 border-t border-slate-100 bg-white flex justify-end">
-            <Button variant="ghost" className="font-bold text-slate-400 cursor-pointer" onClick={() => setIsTemplateModalOpen(false)}>
-              Tutup
-            </Button>
-          </div>
         </DialogContent>
       </Dialog>
     </div>
+  );
+}
+
+export default function CreatePpatPage() {
+  return (
+    <Suspense fallback={<div className="p-10 text-center font-bold text-slate-400">Memuat Formulir...</div>}>
+      <CreatePpatForm />
+    </Suspense>
   );
 }

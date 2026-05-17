@@ -1,8 +1,10 @@
 "use client";
 
 import { useState, useEffect, useRef } from "react";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
+import Link from "next/link";
 import { useSession } from "next-auth/react";
+import { Suspense } from "react";
 import {
   ArrowLeft,
   Search,
@@ -21,6 +23,7 @@ import {
   ShieldCheck,
   Eye,
   UserPlus,
+  ClipboardList,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -59,13 +62,16 @@ const GET_ROLES_FOR_TYPE = (typeValue: string) => {
   return ["Pihak I", "Pihak II", "Pihak III", "Saksi"];
 };
 
-export default function CreateDeedPage() {
+function CreateDeedForm() {
   const router = useRouter();
+  const searchParams = useSearchParams();
+  const serviceRequestId = searchParams.get("serviceRequestId");
+  const initialClientId = searchParams.get("clientId");
+  const initialTitle = searchParams.get("title");
+  
   const { data: session } = useSession();
   const [isSubmitting, setIsSubmitting] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
-  const ktpInputRef = useRef<HTMLInputElement>(null);
-  const npwpInputRef = useRef<HTMLInputElement>(null);
 
   // Form states
   const [title, setTitle] = useState("");
@@ -87,15 +93,29 @@ export default function CreateDeedPage() {
   const [parties, setParties] = useState<any[]>([]);
   const [newPartyName, setNewPartyName] = useState("");
   const [newPartyRole, setNewPartyRole] = useState("");
-  const [newPartyKtp, setNewPartyKtp] = useState<File | null>(null);
-  const [newPartyNpwp, setNewPartyNpwp] = useState<File | null>(null);
+  const [isCustomRole, setIsCustomRole] = useState(false);
   const [isRoleDropdownOpen, setIsRoleDropdownOpen] = useState(false);
+  const [allConsultations, setAllConsultations] = useState<any[]>([]);
+  const [isConsultationDropdownOpen, setIsConsultationDropdownOpen] = useState(false);
+  const [selectedServiceRequestId, setSelectedServiceRequestId] = useState<string | null>(serviceRequestId);
+  
+  const [isPartyClientDropdownOpen, setIsPartyClientDropdownOpen] = useState(false);
+  const [partyClientSearch, setPartyClientSearch] = useState("");
+  const [selectedPartyClientId, setSelectedPartyClientId] = useState<string | null>(null);
 
   const filteredClients = clientSearch
     ? allClients.filter(
         (c) =>
           c.name.toLowerCase().includes(clientSearch.toLowerCase()) ||
           c.nik?.includes(clientSearch)
+      )
+    : allClients.slice(0, 6);
+
+  const filteredPartyClients = partyClientSearch
+    ? allClients.filter(
+        (c) =>
+          c.name.toLowerCase().includes(partyClientSearch.toLowerCase()) ||
+          c.nik?.includes(partyClientSearch)
       )
     : allClients.slice(0, 6);
 
@@ -125,6 +145,38 @@ export default function CreateDeedPage() {
     fetchAllClients();
   }, [session]);
 
+  const fetchConsultations = async (clientId: string) => {
+    try {
+      const tenantId = (session?.user as any)?.tenantId;
+      const res = await fetch(`/api/service-requests?tenantId=${tenantId}&clientId=${clientId}`, {
+        headers: { 'Authorization': `Bearer ${(session as any)?.backendToken}` }
+      });
+      const result = await res.json();
+      if (result.success) setAllConsultations(result.data);
+    } catch (err) {
+      console.error("Fetch consultations error:", err);
+    }
+  };
+
+  useEffect(() => {
+    if (selectedClient) {
+      fetchConsultations(selectedClient.id);
+    } else {
+      setAllConsultations([]);
+      setSelectedServiceRequestId(null);
+    }
+  }, [selectedClient, session]);
+
+  // Pre-fill from query params
+  useEffect(() => {
+    if (initialTitle && !title) setTitle(decodeURIComponent(initialTitle));
+    if (initialClientId && allClients.length > 0 && !selectedClient) {
+      const client = allClients.find(c => c.id === initialClientId);
+      if (client) setSelectedClient(client);
+    }
+    if (serviceRequestId) setSelectedServiceRequestId(serviceRequestId);
+  }, [initialTitle, initialClientId, allClients, title, selectedClient, serviceRequestId]);
+
   const handleSubmit = async () => {
     if (!title || !selectedType || !selectedClient) {
       alert("Mohon lengkapi isian wajib: Klien, Judul, dan Jenis Akta.");
@@ -143,6 +195,7 @@ export default function CreateDeedPage() {
           clientId: selectedClient.id,
           createdById: userId,
           targetFinalization: targetDate || null,
+          serviceRequestId: selectedServiceRequestId || null,
         })
       );
       if (uploadedFiles.length > 0) formData.append("draft", uploadedFiles[0]);
@@ -152,10 +205,6 @@ export default function CreateDeedPage() {
           parties.map((p) => ({ name: p.name, role: p.role, clientId: p.clientId }))
         )
       );
-      parties.forEach((p, idx) => {
-        if (p.ktp) formData.append(`ktp_${idx}`, p.ktp);
-        if (p.npwp) formData.append(`npwp_${idx}`, p.npwp);
-      });
 
       const response = await fetch(`/api/deeds?tenantId=${tenantId}`, {
         method: "POST",
@@ -176,23 +225,28 @@ export default function CreateDeedPage() {
     }
   };
 
-  const addParty = () => {
-    if (!newPartyName.trim()) return;
+  const addParty = (client?: any) => {
+    const name = client ? client.name : newPartyName.trim();
+    if (!name) return;
+    
+    // Determine clientId: use the passed client, the stored ID, or lookup by name as a fallback
+    const finalClientId = client ? client.id : (selectedPartyClientId || allClients.find(c => c.name === name)?.id || null);
+
     setParties((prev) => [
       ...prev,
       { 
         id: Date.now(), 
-        name: newPartyName.trim(), 
+        name: name, 
         role: newPartyRole || "Pihak I", 
-        ktp: newPartyKtp, 
-        npwp: newPartyNpwp, 
-        clientId: null 
+        clientId: finalClientId
       },
     ]);
+    setIsCustomRole(false);
     setNewPartyName("");
     setNewPartyRole("");
-    setNewPartyKtp(null);
-    setNewPartyNpwp(null);
+    setSelectedPartyClientId(null);
+    setPartyClientSearch("");
+    setIsPartyClientDropdownOpen(false);
   };
 
   const removeParty = (id: number) => setParties((prev) => prev.filter((p) => p.id !== id));
@@ -341,7 +395,18 @@ export default function CreateDeedPage() {
                         </div>
                         <div className="max-h-52 overflow-y-auto p-2">
                           {filteredClients.length === 0 ? (
-                            <div className="p-6 text-center text-xs font-bold text-slate-400">Klien tidak ditemukan</div>
+                            <div className="py-12 px-6 text-center space-y-4">
+                              <div className="flex flex-col items-center gap-2">
+                                <Users className="h-8 w-8 text-slate-200" />
+                                <p className="text-xs font-bold text-slate-400">Klien tidak ditemukan</p>
+                              </div>
+                              <Link 
+                                href="/dashboard/klien/create"
+                                className="inline-flex items-center gap-2 px-6 py-2.5 bg-indigo-600 text-white rounded-xl text-[10px] font-black uppercase tracking-widest hover:bg-indigo-700 transition-all shadow-lg shadow-indigo-200 cursor-pointer active:scale-95"
+                              >
+                                <Plus className="h-3 w-3" /> Tambah Klien Baru
+                              </Link>
+                            </div>
                           ) : (
                             filteredClients.map((c) => (
                               <button
@@ -473,6 +538,88 @@ export default function CreateDeedPage() {
             </div>
           </div>
 
+          {/* Section 2.5 — Konsultansi Terkait */}
+          <div className="bg-white rounded-2xl border border-gray-100 shadow-sm overflow-visible">
+            <div className="flex items-center gap-3 px-6 py-4 border-b border-slate-100">
+              <div className="h-7 w-7 rounded-lg bg-indigo-50 border border-indigo-100 flex items-center justify-center">
+                <ClipboardList className={`h-3.5 w-3.5 ${selectedServiceRequestId ? 'text-indigo-600' : 'text-slate-400'}`} />
+              </div>
+              <span className="text-sm font-black text-slate-700">Konsultansi Terkait</span>
+              {!selectedClient && <span className="text-[10px] text-slate-400 font-medium ml-2">(Pilih klien terlebih dahulu)</span>}
+            </div>
+            <div className="p-6">
+              {selectedServiceRequestId ? (
+                <div className="flex items-center justify-between p-4 rounded-xl border-2 border-indigo-100 bg-indigo-50/30">
+                  <div className="flex items-center gap-3">
+                    <div className="h-10 w-10 rounded-xl bg-indigo-100 border border-indigo-200 flex items-center justify-center">
+                      <ClipboardList className="h-5 w-5 text-indigo-600" />
+                    </div>
+                    <div>
+                      <p className="font-bold text-slate-900 truncate max-w-[300px]">
+                        {allConsultations.find(c => c.id === selectedServiceRequestId)?.description || "Konsultansi Terpilih"}
+                      </p>
+                      <p className="text-[10px] font-mono font-bold text-indigo-600 uppercase tracking-widest mt-0.5">ID: {selectedServiceRequestId}</p>
+                    </div>
+                  </div>
+                  <button
+                    className="h-8 w-8 rounded-lg text-slate-300 hover:text-red-500 hover:bg-red-50 flex items-center justify-center transition-colors cursor-pointer"
+                    onClick={() => setSelectedServiceRequestId(null)}
+                  >
+                    <X className="h-4 w-4" />
+                  </button>
+                </div>
+              ) : (
+                <div className="relative">
+                  <div
+                    onClick={() => selectedClient && setIsConsultationDropdownOpen(!isConsultationDropdownOpen)}
+                    className={`flex h-12 items-center justify-between border px-4 text-sm transition-all rounded-xl ${
+                      !selectedClient 
+                        ? "bg-slate-50 border-slate-100 cursor-not-allowed" 
+                        : isConsultationDropdownOpen
+                        ? "border-indigo-400 ring-2 ring-indigo-100 cursor-pointer"
+                        : "border-slate-200 hover:border-indigo-300 hover:ring-2 hover:ring-indigo-50 cursor-pointer"
+                    }`}
+                  >
+                    <span className="text-slate-400 font-medium text-sm">
+                      {!selectedClient ? "Pilih klien untuk melihat daftar konsultansi" : "Hubungkan dengan sesi konsultansi..."}
+                    </span>
+                    <ChevronDown className={`h-4 w-4 text-slate-400 transition-transform ${isConsultationDropdownOpen ? "rotate-180 text-indigo-500" : ""}`} />
+                  </div>
+                  {isConsultationDropdownOpen && (
+                    <>
+                      <div className="fixed inset-0 z-40" onClick={() => setIsConsultationDropdownOpen(false)} />
+                      <div className="absolute top-full left-0 w-full mt-1 bg-white border border-slate-100 rounded-2xl shadow-2xl z-50 overflow-hidden">
+                        <div className="max-h-52 overflow-y-auto p-2">
+                          {allConsultations.length === 0 ? (
+                            <div className="p-6 text-center text-xs font-bold text-slate-400">Tidak ada data konsultansi klien ini</div>
+                          ) : (
+                            allConsultations.map((c) => (
+                              <button
+                                key={c.id}
+                                className="w-full flex items-center gap-3 p-3 hover:bg-indigo-50 rounded-xl transition-colors text-left cursor-pointer"
+                                onClick={() => { setSelectedServiceRequestId(c.id); setIsConsultationDropdownOpen(false); }}
+                              >
+                                <div className="h-8 w-8 rounded-xl bg-slate-50 border border-slate-100 flex items-center justify-center text-slate-400 group-hover:text-indigo-600">
+                                  <ClipboardList className="h-4 w-4" />
+                                </div>
+                                <div>
+                                  <p className="font-bold text-slate-900 text-sm truncate max-w-[300px]">{c.description || "Tanpa Deskripsi"}</p>
+                                  <p className="text-[10px] font-mono text-slate-400 uppercase tracking-wider">
+                                    {new Date(c.createdAt).toLocaleDateString('id-ID')} · {c.serviceCategory}
+                                  </p>
+                                </div>
+                              </button>
+                            ))
+                          )}
+                        </div>
+                      </div>
+                    </>
+                  )}
+                </div>
+              )}
+            </div>
+          </div>
+
           {/* Section 3 — Pihak Terkait (Stakeholders) */}
           <div className="bg-white rounded-2xl border border-gray-100 shadow-sm">
             <div className="flex items-center gap-3 px-6 py-4 border-b border-slate-100">
@@ -510,16 +657,6 @@ export default function CreateDeedPage() {
                           <p className="text-xs font-black text-slate-700">{party.name}</p>
                           <div className="flex items-center gap-1.5 mt-0.5">
                             <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">{party.role}</p>
-                            {party.ktp && (
-                              <span className="flex items-center gap-1 text-[8px] font-black bg-emerald-50 text-emerald-600 px-1.5 py-0.5 rounded border border-emerald-100 uppercase">
-                                <ShieldCheck className="h-2 w-2" /> KTP Siap
-                              </span>
-                            )}
-                            {party.npwp && (
-                              <span className="flex items-center gap-1 text-[8px] font-black bg-sky-50 text-sky-600 px-1.5 py-0.5 rounded border border-sky-100 uppercase">
-                                <FileText className="h-2 w-2" /> NPWP Siap
-                              </span>
-                            )}
                           </div>
                         </div>
                       </div>
@@ -535,103 +672,157 @@ export default function CreateDeedPage() {
               )}
 
               {/* Form tambah pihak */}
-              <div className="grid grid-cols-1 md:grid-cols-[1fr_150px_auto_auto] gap-3 items-end">
-                <div className="space-y-1.5">
-                  <label className="text-[10px] font-black uppercase tracking-widest text-slate-400 ml-1">Nama Pihak</label>
-                  <Input
-                    placeholder="Contoh: Budi Santoso"
-                    className="rounded-xl border-slate-200 h-10 text-sm font-medium focus-visible:ring-indigo-500/30 focus-visible:border-indigo-300"
-                    value={newPartyName}
-                    onChange={(e) => setNewPartyName(e.target.value)}
-                    onKeyDown={(e) => { if (e.key === "Enter") addParty(); }}
-                  />
+              <div className="grid grid-cols-1 md:grid-cols-[1.5fr_1fr_auto] gap-3 items-end">
+                <div className="space-y-1.5 relative">
+                  <label className="text-[10px] font-black uppercase tracking-widest text-slate-400 ml-1">Nama Pihak (Cari Klien)</label>
+                  <div
+                    onClick={() => setIsPartyClientDropdownOpen(!isPartyClientDropdownOpen)}
+                    className={`flex h-10 items-center justify-between border px-3 text-xs cursor-pointer transition-all rounded-xl ${
+                      isPartyClientDropdownOpen
+                        ? "border-indigo-400 ring-2 ring-indigo-100"
+                        : "border-slate-200 hover:border-indigo-300"
+                    }`}
+                  >
+                    <span className={newPartyName ? "font-bold text-slate-900" : "text-slate-400 font-medium"}>
+                      {newPartyName || "Pilih dari daftar klien..."}
+                    </span>
+                    <ChevronDown className={`h-3.5 w-3.5 text-slate-400 transition-transform ${isPartyClientDropdownOpen ? "rotate-180 text-indigo-500" : ""}`} />
+                  </div>
+
+                  {isPartyClientDropdownOpen && (
+                    <>
+                      <div className="fixed inset-0 z-40" onClick={() => setIsPartyClientDropdownOpen(false)} />
+                      <div className="absolute bottom-full left-0 right-0 mb-1 bg-white border border-slate-100 rounded-2xl shadow-2xl z-50 overflow-hidden">
+                        <div className="p-2 border-b border-slate-50 flex items-center gap-2 px-3 bg-slate-50/60">
+                          <Search className="h-3 w-3 text-slate-400 shrink-0" />
+                          <input
+                            autoFocus
+                            type="text"
+                            placeholder="Ketik nama klien..."
+                            className="w-full bg-transparent border-none text-[11px] focus:outline-none placeholder:text-slate-300 font-medium text-slate-700 h-6"
+                            value={partyClientSearch}
+                            onChange={(e) => {
+                              setPartyClientSearch(e.target.value);
+                              setNewPartyName(e.target.value);
+                              setSelectedPartyClientId(null);
+                            }}
+                          />
+                        </div>
+                        <div className="max-h-40 overflow-y-auto p-1.5">
+                          {filteredPartyClients.length === 0 ? (
+                            <div className="py-8 px-4 text-center space-y-3">
+                              <p className="text-[10px] font-bold text-slate-400">Klien tidak ditemukan</p>
+                              <Link 
+                                href="/dashboard/klien/create"
+                                className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-slate-50 text-slate-600 rounded-lg text-[9px] font-black uppercase tracking-tight hover:bg-indigo-50 hover:text-indigo-700 transition-colors"
+                              >
+                                <Plus className="h-3 w-3" /> Tambah Klien
+                              </Link>
+                            </div>
+                          ) : (
+                            filteredPartyClients.map((c) => (
+                              <button
+                                key={c.id}
+                                className="w-full flex items-center gap-2 p-2 hover:bg-indigo-50 rounded-lg transition-colors text-left cursor-pointer"
+                                onClick={() => { 
+                                  setNewPartyName(c.name);
+                                  setSelectedPartyClientId(c.id);
+                                  setPartyClientSearch("");
+                                  setIsPartyClientDropdownOpen(false); 
+                                }}
+                              >
+                                <div className="h-6 w-6 rounded-full bg-slate-100 flex items-center justify-center font-bold text-slate-500 text-[10px] uppercase">
+                                  {c.name.charAt(0)}
+                                </div>
+                                <div>
+                                  <p className="font-bold text-slate-900 text-[11px]">{c.name}</p>
+                                  <p className="text-[9px] font-mono text-slate-400">NIK: {c.nik}</p>
+                                </div>
+                              </button>
+                            ))
+                          )}
+                        </div>
+                      </div>
+                    </>
+                  )}
                 </div>
                 <div className="space-y-1.5">
                   <label className="text-[10px] font-black uppercase tracking-widest text-slate-400 ml-1">Peran</label>
                   <div className="relative min-h-[40px]">
-                    <div
-                      onClick={() => setIsRoleDropdownOpen(!isRoleDropdownOpen)}
-                      className={`flex h-10 items-center justify-between border px-3 text-xs cursor-pointer transition-all rounded-xl ${
-                        isRoleDropdownOpen
-                          ? "border-indigo-400 ring-2 ring-indigo-100"
-                          : "border-slate-200 hover:border-indigo-300 hover:ring-2 hover:ring-indigo-50"
-                      }`}
-                    >
-                      <span className={newPartyRole ? "font-bold text-slate-900" : "text-slate-400 font-medium"}>
-                        {newPartyRole || "Pilih peran..."}
-                      </span>
-                      <ChevronDown className={`h-3.5 w-3.5 text-slate-400 transition-transform ${isRoleDropdownOpen ? "rotate-180 text-indigo-500" : ""}`} />
-                    </div>
-                    {isRoleDropdownOpen && (
+                    {isCustomRole ? (
+                      <div className="relative flex items-center gap-1">
+                        <Input
+                          autoFocus
+                          placeholder="Peran custom..."
+                          className="rounded-xl border-indigo-400 h-10 text-xs font-bold pr-8"
+                          value={newPartyRole}
+                          onChange={(e) => setNewPartyRole(e.target.value)}
+                          onKeyDown={(e) => { if (e.key === "Escape") { setIsCustomRole(false); setNewPartyRole(""); } }}
+                        />
+                        <button 
+                          onClick={() => { setIsCustomRole(false); setNewPartyRole(""); }}
+                          className="absolute right-2 text-slate-400 hover:text-slate-600 transition-colors"
+                        >
+                          <X className="h-3.5 w-3.5" />
+                        </button>
+                      </div>
+                    ) : (
                       <>
-                        <div className="fixed inset-0 z-40" onClick={() => setIsRoleDropdownOpen(false)} />
-                        <div className="absolute bottom-full left-0 w-full mb-1 bg-white border border-slate-100 rounded-2xl shadow-2xl z-50 overflow-hidden">
-                          <div className="p-1.5">
-                            {suggestedRoles.map((r) => (
-                              <button
-                                key={r}
-                                className={`w-full text-left px-4 py-2 text-xs rounded-xl transition-colors flex items-center justify-between cursor-pointer ${
-                                  newPartyRole === r
-                                    ? "bg-indigo-50 text-indigo-700"
-                                    : "hover:bg-slate-50 text-slate-600"
-                                }`}
-                                onClick={() => { setNewPartyRole(r); setIsRoleDropdownOpen(false); }}
-                              >
-                                <span className="font-bold">{r}</span>
-                                {newPartyRole === r && <Check className="h-3 w-3 text-indigo-600 shrink-0" />}
-                              </button>
-                            ))}
-                          </div>
+                        <div
+                          onClick={() => setIsRoleDropdownOpen(!isRoleDropdownOpen)}
+                          className={`flex h-10 items-center justify-between border px-3 text-xs cursor-pointer transition-all rounded-xl ${
+                            isRoleDropdownOpen
+                              ? "border-indigo-400 ring-2 ring-indigo-100"
+                              : "border-slate-200 hover:border-indigo-300 hover:ring-2 hover:ring-indigo-50"
+                          }`}
+                        >
+                          <span className={newPartyRole ? "font-bold text-slate-900" : "text-slate-400 font-medium"}>
+                            {newPartyRole || "Pilih peran..."}
+                          </span>
+                          <ChevronDown className={`h-3.5 w-3.5 text-slate-400 transition-transform ${isRoleDropdownOpen ? "rotate-180 text-indigo-500" : ""}`} />
                         </div>
+                        {isRoleDropdownOpen && (
+                          <>
+                            <div className="fixed inset-0 z-40" onClick={() => setIsRoleDropdownOpen(false)} />
+                            <div className="absolute bottom-full left-0 w-full mb-1 bg-white border border-slate-100 rounded-2xl shadow-2xl z-50 overflow-hidden">
+                              <div className="p-1.5">
+                                {suggestedRoles.map((r) => (
+                                  <button
+                                    key={r}
+                                    className={`w-full text-left px-4 py-2 text-xs rounded-xl transition-colors flex items-center justify-between cursor-pointer ${
+                                      newPartyRole === r
+                                        ? "bg-indigo-50 text-indigo-700"
+                                        : "hover:bg-slate-50 text-slate-600"
+                                    }`}
+                                    onClick={() => { setNewPartyRole(r); setIsRoleDropdownOpen(false); }}
+                                  >
+                                    <span className="font-bold">{r}</span>
+                                    {newPartyRole === r && <Check className="h-3 w-3 text-indigo-600 shrink-0" />}
+                                  </button>
+                                ))}
+                                <div className="h-px bg-slate-50 my-1 mx-2" />
+                                <button
+                                  className="w-full text-left px-4 py-2 text-xs rounded-xl hover:bg-amber-50 text-amber-700 transition-colors flex items-center justify-between cursor-pointer"
+                                  onClick={() => { setIsCustomRole(true); setNewPartyRole(""); setIsRoleDropdownOpen(false); }}
+                                >
+                                  <span className="font-black italic">Custom</span>
+                                  <Plus className="h-3 w-3 text-amber-600 shrink-0" />
+                                </button>
+                              </div>
+                            </div>
+                          </>
+                        )}
                       </>
                     )}
                   </div>
                 </div>
 
-                <div className="flex items-center gap-2 mb-0.5">
-                  <div className="space-y-1.5">
-                    <label className="text-[10px] font-black uppercase tracking-widest text-slate-400 ml-1">KTP</label>
-                    <input 
-                      type="file" 
-                      className="hidden" 
-                      ref={ktpInputRef} 
-                      accept=".pdf,.jpg,.jpeg,.png"
-                      onChange={(e) => setNewPartyKtp(e.target.files?.[0] || null)}
-                    />
-                    <button
-                      onClick={() => ktpInputRef.current?.click()}
-                      className={`h-9 w-9 rounded-xl border flex items-center justify-center transition-all cursor-pointer ${
-                        newPartyKtp ? "bg-emerald-50 border-emerald-200 text-emerald-600" : "bg-slate-50 border-slate-200 text-slate-400 hover:border-indigo-300 hover:text-indigo-500"
-                      }`}
-                    >
-                      <ShieldCheck className="h-4 w-4" />
-                    </button>
-                  </div>
-                  <div className="space-y-1.5">
-                    <label className="text-[10px] font-black uppercase tracking-widest text-slate-400 ml-1">NPWP</label>
-                    <input 
-                      type="file" 
-                      className="hidden" 
-                      ref={npwpInputRef} 
-                      accept=".pdf,.jpg,.jpeg,.png"
-                      onChange={(e) => setNewPartyNpwp(e.target.files?.[0] || null)}
-                    />
-                    <button
-                      onClick={() => npwpInputRef.current?.click()}
-                      className={`h-9 w-9 rounded-xl border flex items-center justify-center transition-all cursor-pointer ${
-                        newPartyNpwp ? "bg-sky-50 border-sky-200 text-sky-600" : "bg-slate-50 border-slate-200 text-slate-400 hover:border-indigo-300 hover:text-indigo-500"
-                      }`}
-                    >
-                      <FileText className="h-4 w-4" />
-                    </button>
-                  </div>
-                </div>
 
                 <div className="space-y-1.5">
                   <label className="text-[10px] font-black uppercase tracking-widest text-transparent ml-1 select-none">_</label>
                   <button
-                    onClick={addParty}
-                    disabled={!newPartyName.trim()}
+                    onClick={() => addParty()}
+                    disabled={!newPartyName.trim() || !newPartyRole.trim()}
                     className="h-9 px-4 rounded-xl bg-indigo-600 hover:bg-indigo-500 disabled:bg-slate-100 disabled:text-slate-300 text-white font-bold flex items-center gap-1.5 transition-all cursor-pointer disabled:cursor-not-allowed text-sm shrink-0 whitespace-nowrap shadow-sm"
                   >
                     <Plus className="h-3.5 w-3.5" /> Tambah
@@ -873,5 +1064,13 @@ export default function CreateDeedPage() {
         </DialogContent>
       </Dialog>
     </div>
+  );
+}
+
+export default function CreateDeedPage() {
+  return (
+    <Suspense fallback={<div className="p-10 text-center">Memuat formulir...</div>}>
+      <CreateDeedForm />
+    </Suspense>
   );
 }

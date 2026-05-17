@@ -17,11 +17,26 @@ import {
   FileText,
   ExternalLink,
   Download,
-  AlertCircle
+  AlertCircle,
+  Plus,
+  Users,
+  ChevronRight,
+  Link2,
+  Search
 } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
+import { Input } from "@/components/ui/input";
+import { toast } from "sonner";
 
 export default function ClientDetailPage({ params }: { params: Promise<{ id: string }> }) {
   const unwrappedParams = use(params);
@@ -31,33 +46,34 @@ export default function ClientDetailPage({ params }: { params: Promise<{ id: str
   const [isLoading, setIsLoading] = useState(true);
   const [apiError, setApiError] = useState<string | null>(null);
 
-  useEffect(() => {
-    const fetchClient = async () => {
-      const tenantId = (session?.user as any)?.tenantId;
-      if (!tenantId) return;
 
-      try {
-        setIsLoading(true);
-        const url = `/api/clients/${unwrappedParams.id}?tenantId=${tenantId}`;
-        console.log("DEBUG Detail Fetch:", url);
-        const response = await fetch(url, {
-          headers: {
-            'Authorization': `Bearer ${(session as any)?.backendToken}`
-          }
-        });
-        const result = await response.json();
-        if (result.success) {
-          setClient(result.data);
-        } else {
-          setApiError(result.message || "Gagal memuat data klien");
+  const fetchClient = async () => {
+    const tenantId = (session?.user as any)?.tenantId;
+    if (!tenantId) return;
+
+    try {
+      setIsLoading(true);
+      const url = `/api/clients/${unwrappedParams.id}?tenantId=${tenantId}`;
+      const response = await fetch(url, {
+        headers: {
+          'Authorization': `Bearer ${(session as any)?.backendToken}`
         }
-      } catch (error) {
-        console.error("Fetch client detail error:", error);
-      } finally {
-        setIsLoading(false);
+      });
+      const result = await response.json();
+      if (result.success) {
+        setClient(result.data);
+      } else {
+        setApiError(result.message || "Gagal memuat data klien");
       }
-    };
+    } catch (error) {
+      console.error("Fetch client detail error:", error);
+    } finally {
+      setIsLoading(false);
+    }
+  };
 
+
+  useEffect(() => {
     fetchClient();
   }, [session, unwrappedParams.id]);
 
@@ -108,8 +124,8 @@ export default function ClientDetailPage({ params }: { params: Promise<{ id: str
               <span className="h-1 w-1 rounded-full bg-slate-300" />
               ID: {client.id.slice(0, 8).toUpperCase()}
             </div>
-          </div>
-        </div>
+            </div>
+            </div>
         <div className="flex gap-3">
            <a href={`/dashboard/klien/${client.id}/edit`}>
              <Button className="font-bold bg-slate-900 hover:bg-slate-800 text-white h-11 px-8 rounded-xl gap-2 shadow-lg shadow-slate-900/10 transition-all active:scale-95">
@@ -206,6 +222,10 @@ export default function ClientDetailPage({ params }: { params: Promise<{ id: str
                </div>
             </CardContent>
           </Card>
+
+
+
+
         </div>
 
         {/* Sidebar: OCR Cloud Documents */}
@@ -282,6 +302,7 @@ export default function ClientDetailPage({ params }: { params: Promise<{ id: str
            </Card>
         </div>
       </div>
+
     </div>
   );
 }

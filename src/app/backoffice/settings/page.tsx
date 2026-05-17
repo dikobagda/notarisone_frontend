@@ -100,7 +100,7 @@ export default function SettingsPage() {
                 <Input 
                   placeholder="Masukkan isi banner..." 
                   className="rounded-xl border-slate-200 h-11 font-medium"
-                  defaultValue="🎉 Selamat datang di NotarisOne v1.5! Nikmati fitur manajemen tim terbaru."
+                  defaultValue="🎉 Selamat datang di penagraha v1.5! Nikmati fitur manajemen tim terbaru."
                   disabled={!bannerMode}
                 />
               </div>

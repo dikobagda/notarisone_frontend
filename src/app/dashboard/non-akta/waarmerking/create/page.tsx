@@ -414,7 +414,7 @@ export default function CreateWaarmerkingPage() {
               <p className="text-xs font-black text-indigo-900 uppercase tracking-widest">Format Output</p>
             </div>
             <p className="text-xs text-indigo-700/70 leading-relaxed font-medium">
-              Data yang Anda masukkan akan tercetak secara otomatis ke dalam Buku Daftar Waarmerking di modul Protokol Digital.
+              Data yang Anda masukkan akan tercetak secara otomatis ke dalam Buku Daftar Waarmerking di modul Laporan Repertorium.
             </p>
           </Card>
         </div>

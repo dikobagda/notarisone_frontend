@@ -76,7 +76,7 @@ export default function AdminUsersPage() {
             <Users className="h-8 w-8 text-orange-500" />
             Manajemen User Internal
           </h2>
-          <p className="text-slate-500 mt-1 font-medium">Kelola tim internal NotarisOne yang memiliki akses ke backoffice.</p>
+          <p className="text-slate-500 mt-1 font-medium">Kelola tim internal penagraha yang memiliki akses ke backoffice.</p>
         </div>
         <Dialog>
           <DialogTrigger render={

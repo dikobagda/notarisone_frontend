@@ -26,7 +26,8 @@ import {
   CheckCircle2,
   Clock3,
   AlertCircle,
-  FolderOpen
+  FolderOpen,
+  ClipboardList
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -323,6 +324,11 @@ export default function PpatPage() {
                     <span className="text-[9px] font-black text-slate-400 uppercase tracking-widest mt-0.5">
                       {DEED_TYPE_LABELS[deed.type] || deed.type}
                     </span>
+                    {deed.serviceRequestId && (
+                      <div className="flex items-center gap-1 mt-1 text-[9px] font-black text-emerald-600 bg-emerald-50 px-1.5 py-0.5 rounded-md border border-emerald-100 w-fit">
+                        <ClipboardList className="h-2.5 w-2.5" /> Terhubung Konsultansi
+                      </div>
+                    )}
                   </div>
                 </Link>
               </div>

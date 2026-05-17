@@ -30,7 +30,7 @@ function Breadcrumb() {
 
   return (
     <div className="flex items-center gap-2 text-sm">
-      <span className="font-semibold text-slate-400">NotarisOne</span>
+      <span className="font-semibold text-slate-400">penagraha</span>
       {segments.map((segment, index) => {
         const label = BREADCRUMB_MAP[segment] || segment;
         const isLast = index === segments.length - 1;

@@ -186,7 +186,7 @@ export default function ActivityLogs() {
       
       <div className="p-4 bg-slate-50/30 border-t border-slate-50">
         <p className="text-[10px] text-center text-slate-400 font-medium italic">
-          Keamanan terjamin dengan sistem logging otomatis NotarisOne
+          Keamanan terjamin dengan sistem logging otomatis penagraha
         </p>
       </div>
     </div>

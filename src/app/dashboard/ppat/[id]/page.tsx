@@ -13,6 +13,7 @@ import {
   Ruler,
   ShieldCheck,
   Download,
+  UserPlus,
   Clock,
   ExternalLink,
   ChevronRight,
@@ -27,12 +28,15 @@ import {
   Phone,
   Fingerprint,
   Upload,
+  Search,
+  Check,
   StampIcon,
   X,
   FolderOpen,
   Pencil,
   History,
-  Plus
+  Plus,
+  ClipboardList
 } from "lucide-react";
 import Link from "next/link";
 import { cn } from "@/lib/utils";
@@ -51,6 +55,16 @@ export default function PpatDetailPage({ params: paramsPromise }: { params: Prom
   const [auditLogs, setAuditLogs] = useState<any[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+
+  const [allClients, setAllClients] = useState<any[]>([]);
+  const [isPartyClientDropdownOpen, setIsPartyClientDropdownOpen] = useState(false);
+  const [partyClientSearch, setPartyClientSearch] = useState("");
+  const [isAddingParty, setIsAddingParty] = useState(false);
+  const [newPartyName, setNewPartyName] = useState("");
+  const [newPartyRole, setNewPartyRole] = useState("");
+  const [isCustomRole, setIsCustomRole] = useState(false);
+  const [isRoleDropdownOpen, setIsRoleDropdownOpen] = useState(false);
+  const [isSavingParty, setIsSavingParty] = useState(false);
   const fetchDeed = async () => {
     const tenantId = (session?.user as any)?.tenantId;
     if (!tenantId || !params.id) return;
@@ -74,37 +88,59 @@ export default function PpatDetailPage({ params: paramsPromise }: { params: Prom
     }
   };
 
-  const [uploadingStakeholderId, setUploadingStakeholderId] = useState<string | null>(null);
 
-  const handleStakeholderUpload = async (stakeholderId: string, type: 'stakeholder_ktp' | 'stakeholder_npwp', file: File) => {
+
+
+
+  const handleAddStakeholder = async () => {
+    if (!newPartyName || !newPartyRole) {
+      alert("Nama dan Peran wajib diisi");
+      return;
+    }
+
     const tenantId = (session?.user as any)?.tenantId;
     if (!tenantId || !params.id) return;
 
+    setIsSavingParty(true);
     try {
-      setUploadingStakeholderId(stakeholderId);
-      const formData = new FormData();
-      formData.append('file', file);
-      formData.append('type', type);
-      formData.append('stakeholderId', stakeholderId);
-
-      const response = await fetch(`/api/deeds/${params.id}/documents?tenantId=${tenantId}`, {
-        method: 'POST',
+      const selectedClient = allClients.find(c => c.name === newPartyName);
+      const response = await fetch(`/api/deeds/${params.id}/stakeholders?tenantId=${tenantId}`, {
+        method: "POST",
         headers: {
-          'Authorization': `Bearer ${(session as any)?.backendToken}`
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${(session as any)?.backendToken}`,
         },
-        body: formData
+        body: JSON.stringify({
+          name: newPartyName,
+          role: newPartyRole,
+          clientId: selectedClient?.id || null,
+        }),
       });
 
       const result = await response.json();
       if (result.success) {
+        setNewPartyName("");
+        setNewPartyRole("");
+        setIsAddingParty(false);
+        setIsCustomRole(false);
         await fetchDeed();
       } else {
-        alert("Gagal mengunggah dokumen: " + result.message);
+        alert("Gagal menambahkan pihak: " + result.message);
       }
     } catch (err) {
-      alert("Terjadi kesalahan saat mengunggah dokumen");
+      alert("Terjadi kesalahan saat menyimpan data");
     } finally {
-      setUploadingStakeholderId(null);
+      setIsSavingParty(false);
+    }
+  };
+
+  const GET_ROLES_FOR_TYPE = (type: string) => {
+    switch (type) {
+      case "AJB": return ["Penjual", "Pembeli", "Saksi", "Penerima Kuasa"];
+      case "HIBAH": return ["Pemberi Hibah", "Penerima Hibah", "Saksi"];
+      case "APHT": return ["Pemberi Hak Tanggungan", "Penerima Hak Tanggungan (Bank)", "Saksi"];
+      case "SKMHT": return ["Pemberi Kuasa", "Penerima Kuasa", "Saksi"];
+      default: return ["Pihak I", "Pihak II", "Pihak III", "Saksi"];
     }
   };
 
@@ -122,10 +158,33 @@ export default function PpatDetailPage({ params: paramsPromise }: { params: Prom
     }
   };
 
+  const fetchClients = async () => {
+    const tenantId = (session?.user as any)?.tenantId;
+    if (!tenantId) return;
+    try {
+      const res = await fetch(`/api/clients?tenantId=${tenantId}`, {
+        headers: { 'Authorization': `Bearer ${(session as any)?.backendToken}` }
+      });
+      const result = await res.json();
+      if (result.success) setAllClients(result.data);
+    } catch (err) {
+      console.error("Clients fetch error:", err);
+    }
+  };
+
   useEffect(() => { 
     fetchDeed(); 
     fetchAuditLogs(); 
+    fetchClients();
   }, [params.id, session]);
+
+  const filteredPartyClients = partyClientSearch
+    ? allClients.filter(
+        (c) =>
+          c.name.toLowerCase().includes(partyClientSearch.toLowerCase()) ||
+          c.nik?.includes(partyClientSearch)
+      )
+    : allClients.slice(0, 6);
 
   useEffect(() => { 
     if (deed?.status) fetchAuditLogs(); 
@@ -188,6 +247,7 @@ export default function PpatDetailPage({ params: paramsPromise }: { params: Prom
 
   const tabs = [
     { id: "info", label: "Ringkasan", icon: FileText },
+    { id: "pihak", label: "Pihak Terkait", icon: Users },
     { id: "objek", label: "Objek Pajak", icon: Map },
     { id: "dokumen", label: "Dokumen Pendukung", icon: Download },
     { id: "audit", label: "Riwayat Aktivitas", icon: History },
@@ -278,6 +338,30 @@ export default function PpatDetailPage({ params: paramsPromise }: { params: Prom
       <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
         {/* Sidebar */}
         <div className="lg:col-span-1 space-y-4">
+          {/* Konsultansi Link */}
+          {deed.serviceRequest && (
+            <div className="rounded-2xl bg-emerald-50 border border-emerald-100 p-5 space-y-3 shadow-sm">
+              <div className="flex items-center gap-2.5">
+                <div className="h-8 w-8 rounded-xl bg-emerald-100 flex items-center justify-center">
+                  <ClipboardList className="h-4 w-4 text-emerald-600" />
+                </div>
+                <span className="text-xs font-black uppercase tracking-widest text-emerald-900">Konsultansi Asal</span>
+              </div>
+              <p className="text-[11px] text-slate-600 font-medium leading-relaxed italic">
+                "{deed.serviceRequest.description?.substring(0, 100)}{deed.serviceRequest.description?.length > 100 ? '...' : ''}"
+              </p>
+              <Link
+                href={`/dashboard/penerimaan/${deed.serviceRequestId}`}
+                className={cn(
+                  buttonVariants({ variant: "outline" }),
+                  "w-full h-9 rounded-xl text-[10px] font-bold gap-2 bg-white border-emerald-200 text-emerald-600 hover:bg-emerald-50 transition-all"
+                )}
+              >
+                Lihat Detail Konsultansi <ExternalLink className="h-3 w-3" />
+              </Link>
+            </div>
+          )}
+
           {/* Integritas Data Card */}
           <div className="rounded-2xl bg-gradient-to-br from-slate-900 to-slate-800 text-white p-5 space-y-4 shadow-xl shadow-slate-900/20">
             <div className="flex items-center gap-2.5">
@@ -345,6 +429,246 @@ export default function PpatDetailPage({ params: paramsPromise }: { params: Prom
             </div>
 
             <div className="p-6">
+              {/* Pihak Terkait Tab */}
+              {activeTab === "pihak" && (
+                <div className="space-y-4">
+                  {/* Header & Add Button */}
+                  <div className="flex items-center justify-between mb-2">
+                    <h4 className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em]">Daftar Pihak Terlibat</h4>
+                    {!isAddingParty && (
+                      <Button
+                        onClick={() => setIsAddingParty(true)}
+                        className="h-8 rounded-lg bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-[10px] px-3 cursor-pointer shadow-md shadow-emerald-600/10 border-0"
+                      >
+                        <UserPlus className="h-3 w-3 mr-1.5" /> Tambah Pihak
+                      </Button>
+                    )}
+                  </div>
+
+                  {/* Add Party Form */}
+                  {isAddingParty && (
+                    <div className="bg-slate-900 rounded-[1.5rem] p-5 border border-slate-800 shadow-xl animate-in fade-in slide-in-from-top-2 duration-300">
+                      <div className="flex items-center justify-between mb-4 pb-3 border-b border-slate-800">
+                        <div className="flex items-center gap-2">
+                          <div className="h-7 w-7 rounded-lg bg-emerald-500/20 border border-emerald-500/30 flex items-center justify-center">
+                            <Plus className="h-4 w-4 text-emerald-400" />
+                          </div>
+                          <p className="text-xs font-black text-white uppercase tracking-widest">Tambah Pihak Baru</p>
+                        </div>
+                        <button onClick={() => setIsAddingParty(false)} className="text-slate-500 hover:text-white transition-colors">
+                          <X className="h-4 w-4" />
+                        </button>
+                      </div>
+
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div className="space-y-1.5 relative">
+                          <label className="text-[9px] font-black text-slate-500 uppercase tracking-widest ml-1">Pilih Klien</label>
+                          <div
+                            onClick={() => setIsPartyClientDropdownOpen(!isPartyClientDropdownOpen)}
+                            className={`flex h-10 items-center justify-between border px-4 text-xs font-bold text-white cursor-pointer rounded-xl transition-colors ${
+                              isPartyClientDropdownOpen ? "border-emerald-500 bg-slate-800" : "border-slate-700 bg-slate-800 hover:border-emerald-500/50"
+                            }`}
+                          >
+                            <span className={newPartyName ? "text-white" : "text-slate-600"}>
+                              {newPartyName || "Pilih klien..."}
+                            </span>
+                            <ChevronDown className={`h-3.5 w-3.5 text-slate-500 transition-transform ${isPartyClientDropdownOpen ? "rotate-180" : ""}`} />
+                          </div>
+
+                          {isPartyClientDropdownOpen && (
+                            <>
+                              <div className="fixed inset-0 z-40" onClick={() => setIsPartyClientDropdownOpen(false)} />
+                              <div className="absolute top-full left-0 right-0 mt-1 bg-slate-900 border border-slate-700 rounded-xl shadow-2xl z-50 overflow-hidden">
+                                <div className="p-2 border-b border-slate-800 flex items-center gap-2 px-3 bg-slate-800/60">
+                                  <Search className="h-3 w-3 text-slate-500 shrink-0" />
+                                  <input
+                                    autoFocus
+                                    type="text"
+                                    placeholder="Ketik nama klien..."
+                                    className="w-full bg-transparent border-none text-[10px] focus:outline-none placeholder:text-slate-600 font-bold text-white h-6"
+                                    value={partyClientSearch}
+                                    onChange={(e) => {
+                                      setPartyClientSearch(e.target.value);
+                                      setNewPartyName(e.target.value);
+                                    }}
+                                  />
+                                </div>
+                                <div className="max-h-40 overflow-y-auto p-1.5 space-y-0.5">
+                                  {filteredPartyClients.length === 0 ? (
+                                    <div className="p-3 text-center text-[10px] font-bold text-slate-600">Klien tidak ditemukan</div>
+                                  ) : (
+                                    filteredPartyClients.map((c) => (
+                                      <button
+                                        key={c.id}
+                                        className="w-full flex items-center gap-2 p-2 hover:bg-emerald-600/20 rounded-lg transition-colors text-left cursor-pointer group/item"
+                                        onClick={() => { 
+                                          setNewPartyName(c.name); 
+                                          setPartyClientSearch("");
+                                          setIsPartyClientDropdownOpen(false); 
+                                        }}
+                                      >
+                                        <div className="h-6 w-6 rounded-full bg-slate-800 border border-slate-700 flex items-center justify-center font-bold text-slate-500 text-[9px] uppercase group-hover/item:text-emerald-400 group-hover/item:border-emerald-500/30">
+                                          {c.name.charAt(0)}
+                                        </div>
+                                        <div>
+                                          <p className="font-bold text-slate-300 text-[10px] group-hover/item:text-white transition-colors">{c.name}</p>
+                                          <p className="text-[8px] font-mono text-slate-500">NIK: {c.nik}</p>
+                                        </div>
+                                      </button>
+                                    ))
+                                  )}
+                                </div>
+                              </div>
+                            </>
+                          )}
+                        </div>
+                        <div className="space-y-1.5 relative">
+                          <label className="text-[9px] font-black text-slate-500 uppercase tracking-widest ml-1">Peran / Jabatan</label>
+                          {isCustomRole ? (
+                            <div className="relative flex items-center gap-1">
+                              <Input
+                                autoFocus
+                                placeholder="Peran custom..."
+                                className="bg-slate-800 border-emerald-500/50 text-white text-xs font-bold rounded-xl h-10 pr-8 placeholder:text-slate-600 focus:ring-emerald-500/20"
+                                value={newPartyRole}
+                                onChange={(e) => setNewPartyRole(e.target.value)}
+                                onKeyDown={(e) => { if (e.key === "Escape") { setIsCustomRole(false); setNewPartyRole(""); } }}
+                              />
+                              <button 
+                                onClick={() => { setIsCustomRole(false); setNewPartyRole(""); }}
+                                className="absolute right-2 text-slate-500 hover:text-white transition-colors"
+                              >
+                                <X className="h-3.5 w-3.5" />
+                              </button>
+                            </div>
+                          ) : (
+                            <>
+                              <div
+                                onClick={() => setIsRoleDropdownOpen(!isRoleDropdownOpen)}
+                                className="flex h-10 items-center justify-between border border-slate-700 bg-slate-800 px-4 text-xs font-bold text-white cursor-pointer rounded-xl hover:border-emerald-500/50 transition-colors"
+                              >
+                                <span className={newPartyRole ? "text-white" : "text-slate-600"}>
+                                  {newPartyRole || "Pilih peran..."}
+                                </span>
+                                <ChevronDown className="h-3.5 w-3.5 text-slate-500" />
+                              </div>
+
+                              {isRoleDropdownOpen && (
+                                <>
+                                  <div className="fixed inset-0 z-40" onClick={() => setIsRoleDropdownOpen(false)} />
+                                  <div className="absolute top-full left-0 w-full mt-1 bg-slate-900 border border-slate-700 rounded-xl shadow-2xl z-50 overflow-hidden">
+                                    <div className="max-h-40 overflow-y-auto p-1.5 space-y-0.5">
+                                      {GET_ROLES_FOR_TYPE(deed.type).map((role) => (
+                                        <button
+                                          key={role}
+                                          className="w-full text-left px-3 py-2 text-[10px] font-bold text-slate-400 hover:bg-slate-800 hover:text-white rounded-lg transition-colors flex items-center justify-between group"
+                                          onClick={() => {
+                                            setNewPartyRole(role);
+                                            setIsRoleDropdownOpen(false);
+                                          }}
+                                        >
+                                          {role}
+                                          {newPartyRole === role && <Check className="h-3 w-3 text-emerald-400" />}
+                                        </button>
+                                      ))}
+                                      <div className="h-px bg-slate-800 my-1 mx-2" />
+                                      <button
+                                        className="w-full text-left px-3 py-2 text-[10px] font-black italic text-emerald-500 hover:bg-slate-800 hover:text-emerald-400 rounded-lg transition-colors flex items-center justify-between group cursor-pointer"
+                                        onClick={() => { setIsCustomRole(true); setNewPartyRole(""); setIsRoleDropdownOpen(false); }}
+                                      >
+                                        Custom
+                                        <Plus className="h-3 w-3 text-emerald-500 shrink-0" />
+                                      </button>
+                                    </div>
+                                  </div>
+                                </>
+                              )}
+                            </>
+                          )}
+                        </div>
+                      </div>
+
+                      <div className="mt-5 flex justify-end">
+                        <Button
+                          onClick={handleAddStakeholder}
+                          disabled={isSavingParty || !newPartyName || !newPartyRole}
+                          className="w-full md:w-auto rounded-xl font-bold bg-emerald-600 hover:bg-emerald-500 h-10 px-8 text-white border-0 shadow-lg shadow-emerald-500/20 disabled:opacity-50 cursor-pointer"
+                        >
+                          {isSavingParty ? <Loader2 className="h-4 w-4 animate-spin" /> : "Simpan Pihak"}
+                        </Button>
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Klien Utama */}
+                  {deed.client && (
+                    <div className="flex items-center justify-between p-4 rounded-xl border-2 border-emerald-100 bg-emerald-50/30">
+                      <div className="flex items-center gap-3">
+                        <div className="h-11 w-11 rounded-full bg-emerald-100 border border-emerald-200 flex items-center justify-center font-black text-emerald-700 text-lg uppercase">
+                          {deed.client.name.charAt(0)}
+                        </div>
+                        <div>
+                          <p className="font-black text-slate-900">{deed.client.name}</p>
+                          <p className="text-xs font-black text-emerald-600 uppercase tracking-widest">Klien Utama / Pemohon</p>
+                        </div>
+                      </div>
+                      <div className="text-right">
+                        <p className="text-[9px] font-black text-slate-400 uppercase tracking-widest">NIK</p>
+                        <p className="text-xs font-mono font-bold text-slate-600">{deed.client.nik || "—"}</p>
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Stakeholders */}
+                  {deed.stakeholders?.length > 0 ? deed.stakeholders.map((party: any) => (
+                    <div key={party.id} className="flex items-center justify-between p-4 rounded-xl border border-slate-100 bg-white hover:bg-slate-50 transition-colors group">
+                      <div className="flex items-center gap-3">
+                        <div className="h-11 w-11 rounded-full bg-slate-100 flex items-center justify-center font-black text-slate-500 text-lg uppercase group-hover:bg-emerald-50 group-hover:text-emerald-600 transition-colors">
+                          {party.name.charAt(0)}
+                        </div>
+                        <div>
+                          <p className="font-bold text-slate-900">{party.name}</p>
+                          <div className="flex items-center gap-2 mt-0.5">
+                            <Badge variant="outline" className="h-5 rounded-md bg-slate-50 border-slate-200 text-slate-500 text-[8px] font-black uppercase tracking-wider group-hover:bg-emerald-50 group-hover:border-emerald-200 group-hover:text-emerald-700 transition-colors">
+                              {party.role}
+                            </Badge>
+                            {party.clientId && (
+                              <Badge variant="outline" className="h-5 rounded-md bg-blue-50 border-blue-200 text-blue-600 text-[8px] font-black uppercase tracking-wider">Terverifikasi</Badge>
+                            )}
+                          </div>
+                        </div>
+                      </div>
+                      
+                      <div className="flex items-center gap-3">
+                        <Button 
+                          variant="ghost" 
+                          size="icon" 
+                          className="h-8 w-8 rounded-lg text-slate-300 hover:text-red-500 hover:bg-red-50 cursor-pointer"
+                        >
+                          <X className="h-4 w-4" />
+                        </Button>
+                      </div>
+                    </div>
+                  )) : (
+                    <div className="py-12 text-center border-2 border-dashed border-slate-100 rounded-[2rem] bg-slate-50/30">
+                      <div className="h-14 w-14 rounded-2xl bg-white border border-slate-100 flex items-center justify-center text-slate-300 mx-auto mb-4 shadow-sm">
+                        <Users className="h-7 w-7" />
+                      </div>
+                      <h4 className="font-black text-slate-800">Belum Ada Pihak Terkait</h4>
+                      <p className="text-xs font-bold text-slate-400 max-w-[240px] mx-auto mt-1 leading-relaxed">
+                        Tambahkan pihak-pihak yang terlibat dalam transaksi ini untuk manajemen berkas yang lengkap.
+                      </p>
+                      <Button
+                        onClick={() => setIsAddingParty(true)}
+                        className="mt-6 h-9 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-[11px] px-6 cursor-pointer shadow-lg shadow-emerald-600/10 border-0 transition-all hover:scale-105"
+                      >
+                        <Plus className="h-3.5 w-3.5 mr-2" /> Tambah Sekarang
+                      </Button>
+                    </div>
+                  )}
+                </div>
+              )}
+
               {/* Ringkasan Tab */}
               {activeTab === "info" && (
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">

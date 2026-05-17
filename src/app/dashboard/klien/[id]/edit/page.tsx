@@ -62,6 +62,7 @@ export default function EditClientPage({ params }: { params: Promise<{ id: strin
   const [npwpError, setNpwpError] = useState<string | null>(null);
   const [npwpPreviewUrl, setNpwpPreviewUrl] = useState<string | null>(null);
 
+
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [showSuccess, setShowSuccess] = useState(false);
   const [formData, setFormData] = useState({
@@ -129,6 +130,7 @@ export default function EditClientPage({ params }: { params: Promise<{ id: strin
 
     fetchClient();
   }, [session, unwrappedParams.id]);
+
 
   const handleOCR = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -479,7 +481,7 @@ export default function EditClientPage({ params }: { params: Promise<{ id: strin
                   />
                 </div>
 
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                   <CustomSelect 
                     label="Status Perkawinan"
                     options={MARITAL_STATUS_OPTIONS}

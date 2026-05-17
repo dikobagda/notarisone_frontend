@@ -745,7 +745,7 @@ export default function CalendarPage() {
                       </DialogHeader>
                       <div className="p-6">
                         <DialogDescription className="text-slate-400 font-medium leading-relaxed">
-                          Apakah Anda yakin ingin memutuskan sinkronisasi Google Calendar? Jadwal NotarisOne baru tidak akan lagi ditambahkan ke kalender pribadi Anda secara otomatis.
+                          Apakah Anda yakin ingin memutuskan sinkronisasi Google Calendar? Jadwal penagraha baru tidak akan lagi ditambahkan ke kalender pribadi Anda secara otomatis.
                         </DialogDescription>
                         <div className="mt-8 grid grid-cols-2 gap-3">
                           <DialogTrigger

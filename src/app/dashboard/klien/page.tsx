@@ -20,7 +20,9 @@ import {
   UserCheck,
   Phone,
   MapPin,
-  FileText
+  FileText,
+  ChevronDown,
+  CornerDownRight
 } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -41,6 +43,8 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
+import { Badge } from "@/components/ui/badge";
+import React from "react";
 
 const AVATAR_COLORS = [
   "bg-indigo-500", "bg-violet-500", "bg-emerald-500", 
@@ -58,6 +62,7 @@ export default function ClientsPage() {
   const [sortKey, setSortKey] = useState<'name' | 'nik' | 'phone'>('name');
   const [sortDir, setSortDir] = useState<'asc' | 'desc'>('asc');
   const [page, setPage] = useState(1);
+  const [expandedRows, setExpandedRows] = useState<Record<string, boolean>>({});
   const PAGE_SIZE = 10;
 
   const handleSort = (key: 'name' | 'nik' | 'phone') => {
@@ -123,6 +128,10 @@ export default function ClientsPage() {
 
   const totalPages = Math.max(1, Math.ceil(sorted.length / PAGE_SIZE));
   const paginated = sorted.slice((page - 1) * PAGE_SIZE, page * PAGE_SIZE);
+
+  const toggleExpand = (id: string) => {
+    setExpandedRows(prev => ({ ...prev, [id]: !prev[id] }));
+  };
 
   const SortIcon = ({ col }: { col: 'name' | 'nik' | 'phone' }) => (
     sortKey === col
@@ -252,90 +261,136 @@ export default function ClientsPage() {
                 </TableRow>
               ) : (
                 paginated.map((client, index) => (
-                  <TableRow
-                    key={client.id}
-                    className="group/row hover:bg-slate-50/60 border-slate-100 transition-colors relative"
-                  >
-                    {/* Client Name + Avatar */}
-                    <TableCell className="px-6 py-4">
-                      <Link href={`/dashboard/klien/${client.id}`} className="flex items-center gap-4 min-w-0">
-                        <div className={`h-10 w-10 shrink-0 rounded-2xl ${AVATAR_COLORS[index % AVATAR_COLORS.length]} flex items-center justify-center text-white font-bold text-sm shadow-sm group-hover/row:scale-105 transition-transform`}>
-                          {client.name.charAt(0).toUpperCase()}
-                        </div>
-                        <div className="min-w-0">
-                          <p className="font-bold text-slate-900 truncate group-hover/row:text-indigo-600 transition-colors">{client.name}</p>
-                          <p className="text-[11px] text-slate-400 font-medium truncate mt-0.5">{client.email || '—'}</p>
-                        </div>
-                      </Link>
-                    </TableCell>
-
-                    {/* NIK */}
-                    <TableCell className="py-4">
-                      <span className="font-mono text-sm text-slate-600 tracking-wide bg-slate-50 px-2 py-1 rounded-lg border border-slate-100">{client.nik}</span>
-                    </TableCell>
-
-                    {/* Phone */}
-                    <TableCell className="py-4">
-                      <div className="flex items-center gap-1.5 text-slate-600">
-                        <Phone className="h-3 w-3 text-slate-400 shrink-0" />
-                        <span className="text-sm font-medium">{client.phone || '—'}</span>
-                      </div>
-                    </TableCell>
-
-                    {/* Address */}
-                    <TableCell className="py-4 pr-4">
-                      <div className="flex items-start gap-1.5 text-slate-500 max-w-[200px]">
-                        <MapPin className="h-3 w-3 text-slate-400 shrink-0 mt-0.5" />
-                        <span className="text-[11px] font-medium line-clamp-2 leading-relaxed" title={client.address}>
-                          {client.address || '—'}
-                        </span>
-                      </div>
-                    </TableCell>
-
-                    {/* Actions */}
-                    <TableCell className="py-4 text-right px-6">
-                      <div className="relative flex justify-end">
-                        <Button
-                          variant="ghost"
-                          size="icon"
-                          className={`h-8 w-8 rounded-xl transition-all cursor-pointer ${
-                            activeMenuId === client.id
-                              ? 'bg-indigo-100 text-indigo-600'
-                              : 'text-slate-400 hover:text-indigo-600 hover:bg-indigo-50'
-                          }`}
-                          onClick={() => setActiveMenuId(activeMenuId === client.id ? null : client.id)}
-                        >
-                          <MoreHorizontal className="h-4 w-4" />
-                        </Button>
-
-                        {activeMenuId === client.id && (
-                          <>
-                            <div className="fixed inset-0 z-[60]" onClick={() => setActiveMenuId(null)} />
-                            <div className="absolute right-0 top-full mt-2 w-48 bg-white border border-slate-100 shadow-xl rounded-2xl z-[70] overflow-hidden">
-                              <div className="p-1.5 space-y-0.5">
-                                <Link href={`/dashboard/klien/${client.id}`} className="flex items-center gap-3 px-3 py-2.5 text-xs font-bold text-slate-600 hover:bg-indigo-50 hover:text-indigo-700 rounded-xl transition-colors">
-                                  <Eye className="h-4 w-4 opacity-60" /> Detail Klien
-                                </Link>
-                                <Link href={`/dashboard/klien/${client.id}/edit`} className="flex items-center gap-3 px-3 py-2.5 text-xs font-bold text-slate-600 hover:bg-indigo-50 hover:text-indigo-700 rounded-xl transition-colors">
-                                  <Edit3 className="h-4 w-4 opacity-60" /> Edit Data
-                                </Link>
-                                <div className="h-px bg-slate-100 my-1 mx-2" />
-                                <button
-                                  onClick={() => {
-                                    setClientToDelete({ id: client.id, name: client.name });
-                                    setIsDeleteDialogOpen(true);
-                                  }}
-                                  className="w-full flex items-center gap-3 px-3 py-2.5 text-xs font-bold text-red-500 hover:bg-red-50 rounded-xl transition-colors text-left cursor-pointer"
-                                >
-                                  <Trash2 className="h-4 w-4 opacity-60" /> Hapus Klien
-                                </button>
-                              </div>
+                  <React.Fragment key={client.id}>
+                    <TableRow
+                      className="group/row hover:bg-slate-50/60 border-slate-100 transition-colors relative"
+                    >
+                      {/* Client Name + Avatar */}
+                      <TableCell className="px-6 py-4">
+                        <div className="flex items-center gap-3">
+                          {client.stakeholderInDeeds?.length > 0 && (
+                            <button 
+                              onClick={() => toggleExpand(client.id)}
+                              className="h-6 w-6 rounded-md hover:bg-slate-100 flex items-center justify-center text-slate-400 hover:text-indigo-600 transition-colors"
+                            >
+                              {expandedRows[client.id] ? <ChevronDown className="h-4 w-4" /> : <ChevronRight className="h-4 w-4" />}
+                            </button>
+                          )}
+                          {!client.stakeholderInDeeds?.length && <div className="w-6" />}
+                          <Link href={`/dashboard/klien/${client.id}`} className="flex items-center gap-4 min-w-0">
+                            <div className={`h-10 w-10 shrink-0 rounded-2xl ${AVATAR_COLORS[index % AVATAR_COLORS.length]} flex items-center justify-center text-white font-bold text-sm shadow-sm group-hover/row:scale-105 transition-transform`}>
+                              {client.name.charAt(0).toUpperCase()}
                             </div>
-                          </>
-                        )}
-                      </div>
-                    </TableCell>
-                  </TableRow>
+                            <div className="min-w-0">
+                              <div className="flex items-center gap-2">
+                                <p className="font-bold text-slate-900 truncate group-hover/row:text-indigo-600 transition-colors">{client.name}</p>
+                                {client.stakeholderInDeeds?.length > 0 && (
+                                  <Badge variant="outline" className="text-[9px] h-4 px-1.5 font-black uppercase tracking-tighter bg-indigo-50 text-indigo-600 border-indigo-100">
+                                    {client.stakeholderInDeeds.length} Pihak Terkait
+                                  </Badge>
+                                )}
+                              </div>
+                              <p className="text-[11px] text-slate-400 font-medium truncate mt-0.5">{client.email || '—'}</p>
+                            </div>
+                          </Link>
+                        </div>
+                      </TableCell>
+
+                      {/* NIK */}
+                      <TableCell className="py-4">
+                        <span className="font-mono text-sm text-slate-600 tracking-wide bg-slate-50 px-2 py-1 rounded-lg border border-slate-100">{client.nik}</span>
+                      </TableCell>
+
+                      {/* Phone */}
+                      <TableCell className="py-4">
+                        <div className="flex items-center gap-1.5 text-slate-600">
+                          <Phone className="h-3 w-3 text-slate-400 shrink-0" />
+                          <span className="text-sm font-medium">{client.phone || '—'}</span>
+                        </div>
+                      </TableCell>
+
+                      {/* Address */}
+                      <TableCell className="py-4 pr-4">
+                        <div className="flex items-start gap-1.5 text-slate-500 max-w-[200px]">
+                          <MapPin className="h-3 w-3 text-slate-400 shrink-0 mt-0.5" />
+                          <span className="text-[11px] font-medium line-clamp-2 leading-relaxed" title={client.address}>
+                            {client.address || '—'}
+                          </span>
+                        </div>
+                      </TableCell>
+
+                      {/* Actions */}
+                      <TableCell className="py-4 text-right px-6">
+                        <div className="relative flex justify-end">
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            className={`h-8 w-8 rounded-xl transition-all cursor-pointer ${
+                              activeMenuId === client.id
+                                ? 'bg-indigo-100 text-indigo-600'
+                                : 'text-slate-400 hover:text-indigo-600 hover:bg-indigo-50'
+                            }`}
+                            onClick={() => setActiveMenuId(activeMenuId === client.id ? null : client.id)}
+                          >
+                            <MoreHorizontal className="h-4 w-4" />
+                          </Button>
+
+                          {activeMenuId === client.id && (
+                            <>
+                              <div className="fixed inset-0 z-[60]" onClick={() => setActiveMenuId(null)} />
+                              <div className="absolute right-0 top-full mt-2 w-48 bg-white border border-slate-100 shadow-xl rounded-2xl z-[70] overflow-hidden">
+                                <div className="p-1.5 space-y-0.5">
+                                  <Link href={`/dashboard/klien/${client.id}`} className="flex items-center gap-3 px-3 py-2.5 text-xs font-bold text-slate-600 hover:bg-indigo-50 hover:text-indigo-700 rounded-xl transition-colors">
+                                    <Eye className="h-4 w-4 opacity-60" /> Detail Klien
+                                  </Link>
+                                  <Link href={`/dashboard/klien/${client.id}/edit`} className="flex items-center gap-3 px-3 py-2.5 text-xs font-bold text-slate-600 hover:bg-indigo-50 hover:text-indigo-700 rounded-xl transition-colors">
+                                    <Edit3 className="h-4 w-4 opacity-60" /> Edit Data
+                                  </Link>
+                                  <div className="h-px bg-slate-100 my-1 mx-2" />
+                                  <button
+                                    onClick={() => {
+                                      setClientToDelete({ id: client.id, name: client.name });
+                                      setIsDeleteDialogOpen(true);
+                                    }}
+                                    className="w-full flex items-center gap-3 px-3 py-2.5 text-xs font-bold text-red-500 hover:bg-red-50 rounded-xl transition-colors text-left cursor-pointer"
+                                  >
+                                    <Trash2 className="h-4 w-4 opacity-60" /> Hapus Klien
+                                  </button>
+                                </div>
+                              </div>
+                            </>
+                          )}
+                        </div>
+                      </TableCell>
+                    </TableRow>
+
+                    {/* Children Rows (Stakeholders from Deeds) */}
+                    {expandedRows[client.id] && client.stakeholderInDeeds?.map((sub: any) => (
+                      <TableRow 
+                        key={sub.id}
+                        className="bg-slate-50/30 hover:bg-slate-50/50 border-slate-100 transition-colors"
+                      >
+                        <TableCell className="px-6 py-3 pl-16" colSpan={3}>
+                          <div className="flex items-center gap-3 min-w-0">
+                            <CornerDownRight className="h-4 w-4 text-slate-300 shrink-0" />
+                            <div className="h-8 w-8 shrink-0 rounded-xl bg-slate-200 flex items-center justify-center text-slate-600 font-bold text-xs">
+                              {sub.name.charAt(0).toUpperCase()}
+                            </div>
+                            <div className="min-w-0">
+                              <p className="text-sm font-bold text-slate-700 truncate">{sub.name}</p>
+                              <p className="text-[10px] text-slate-400 font-medium truncate italic">{sub.role}</p>
+                            </div>
+                          </div>
+                        </TableCell>
+                        <TableCell className="py-3 text-slate-400 text-[11px] font-medium italic">
+                          Pihak Terkait (Manajemen Akta)
+                        </TableCell>
+                        <TableCell className="py-3 text-right px-6">
+                           {/* Action for non-client stakeholders? Maybe view deed? */}
+                        </TableCell>
+                      </TableRow>
+                    ))}
+                  </React.Fragment>
                 ))
               )}
             </TableBody>

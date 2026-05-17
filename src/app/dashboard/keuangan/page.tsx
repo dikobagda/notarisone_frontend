@@ -104,6 +104,7 @@ export default function KeuanganDashboard() {
         setInvoices(result.data);
       }
     } catch (err) {
+      console.error("Fetch invoices error:", err);
       toast.error("Gagal memuat data keuangan");
     } finally {
       setIsLoading(false);

@@ -83,7 +83,7 @@ export const authOptions: NextAuthOptions = {
         } else if (account && account.provider === 'google') {
           try {
             const cookieStore = await cookies();
-            const bridgeUserId = cookieStore.get("notarisone-link-userid")?.value;
+            const bridgeUserId = cookieStore.get("penagraha-link-userid")?.value;
             const sessionToken = 
               cookieStore.get("next-auth.session-token")?.value || 
               cookieStore.get("__Secure-next-auth.session-token")?.value ||
@@ -94,7 +94,7 @@ export const authOptions: NextAuthOptions = {
               try {
                 oldToken = await decode({
                   token: sessionToken,
-                  secret: process.env.NEXTAUTH_SECRET || "notarisone_local_secret_key"
+                  secret: process.env.NEXTAUTH_SECRET || "penagraha_local_secret_key"
                 });
               } catch (e) {}
             }
@@ -164,7 +164,7 @@ export const authOptions: NextAuthOptions = {
   session: {
     strategy: "jwt",
   },
-  secret: process.env.NEXTAUTH_SECRET || "notarisone_local_secret_key",
+  secret: process.env.NEXTAUTH_SECRET || "penagraha_local_secret_key",
 };
 
 const handler = NextAuth(authOptions);

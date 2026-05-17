@@ -12,7 +12,7 @@ const montserrat = Montserrat({
 });
 
 export const metadata: Metadata = {
-  title: "NotarisOne - Platform Manajemen Notaris Modern",
+  title: "penagraha - Platform Manajemen Notaris Modern",
   description: "Solusi SaaS terpadu untuk manajemen akta, klien, dan protokol notaris di Indonesia.",
   icons: {
     icon: "/favicon.svg",
@@ -28,7 +28,7 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="id" suppressHydrationWarning>
-      <body className={`${montserrat.variable} ${montserrat.className} font-sans`}>
+      <body className={`${montserrat.variable} ${montserrat.className} font-sans`} suppressHydrationWarning>
         <Providers>
           <TooltipProvider>
             {children}

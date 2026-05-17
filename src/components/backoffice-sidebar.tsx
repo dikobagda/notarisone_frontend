@@ -59,13 +59,13 @@ export function BackofficeSidebar() {
   return (
     <Sidebar collapsible="icon" className="border-r border-border bg-slate-900 text-white dark">
       <SidebarHeader className="p-4 bg-slate-950">
-        <div className="flex items-center gap-3 px-1">
-          <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-orange-500 text-white font-bold text-xl shadow-lg shadow-orange-500/20">
-            N
+        <div className="flex items-center gap-3 px-3">
+          <div className="h-9 w-9 rounded-xl overflow-hidden shadow-lg shadow-indigo-500/20 bg-white">
+            <img src="/logo-penagraha.png" alt="Penagraha" className="h-full w-full object-contain" />
           </div>
-          <div className="flex flex-col gap-0.5 leading-none">
-            <span className="font-semibold text-lg tracking-tight">NotarisOne</span>
-            <span className="text-[10px] text-orange-400 font-bold tracking-widest uppercase">Admin Backoffice</span>
+          <div className="flex flex-col">
+            <span className="font-semibold text-lg tracking-tight">Penagraha</span>
+            <span className="text-[10px] font-bold text-slate-500 uppercase tracking-widest leading-none">Admin Portal</span>
           </div>
         </div>
       </SidebarHeader>

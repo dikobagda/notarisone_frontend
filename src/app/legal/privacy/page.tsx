@@ -28,7 +28,7 @@ export default function PrivacyPage() {
             <section className="space-y-3">
               <h2 className="text-xl font-bold text-foreground">2. Penggunaan Informasi</h2>
               <p>
-                Informasi yang kami kumpulkan digunakan untuk menyediakan layanan, memproses pendaftaran, dan meningkatkan pengalaman pengguna di platform NotarisOne.
+                Informasi yang kami kumpulkan digunakan untuk menyediakan layanan, memproses pendaftaran, dan meningkatkan pengalaman pengguna di platform penagraha.
               </p>
             </section>
 

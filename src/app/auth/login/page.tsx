@@ -87,11 +87,11 @@ export default function LoginPage() {
         {/* Logo */}
         <div className="relative z-10">
           <div className="flex items-center gap-3">
-            <div className="h-10 w-10 rounded-xl bg-gradient-to-br from-indigo-500 to-violet-600 flex items-center justify-center font-bold text-white text-xl shadow-lg shadow-indigo-500/30">
-              N
+            <div className="h-10 w-10 rounded-xl overflow-hidden shadow-lg shadow-indigo-500/30">
+              <img src="/logo-penagraha.png" alt="Penagraha" className="h-full w-full object-contain" />
             </div>
             <div>
-              <span className="text-foreground font-bold text-xl tracking-tight">NotarisOne</span>
+              <span className="text-foreground font-bold text-xl tracking-tight">Penagraha</span>
               <p className="text-muted-foreground text-[10px] font-medium tracking-widest uppercase">Legal Platform</p>
             </div>
           </div>
@@ -156,10 +156,10 @@ export default function LoginPage() {
         <div className="w-full max-w-sm relative z-10">
           {/* Mobile logo */}
           <div className="flex items-center gap-3 mb-10 lg:hidden">
-            <div className="h-9 w-9 rounded-xl bg-gradient-to-br from-indigo-500 to-violet-600 flex items-center justify-center font-bold text-white text-lg">
-              N
+            <div className="h-9 w-9 rounded-xl overflow-hidden">
+              <img src="/logo-penagraha.png" alt="Penagraha" className="h-full w-full object-contain" />
             </div>
-            <span className="text-foreground font-bold text-lg tracking-tight">NotarisOne</span>
+            <span className="text-foreground font-bold text-lg tracking-tight">Penagraha</span>
           </div>
 
           <div className="space-y-2 mb-10">
@@ -261,7 +261,7 @@ export default function LoginPage() {
               </a>
             </p>
             <p className="text-muted-foreground/20 text-xs text-center">
-              &copy; {new Date().getFullYear()} NotarisOne. Hak cipta dilindungi.
+              &copy; {new Date().getFullYear()} Penagraha. Hak cipta dilindungi.
             </p>
           </div>
         </div>

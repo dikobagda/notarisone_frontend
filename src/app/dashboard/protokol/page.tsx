@@ -261,7 +261,7 @@ export default function ProtokolPage() {
               Buku Repertorium Digital
             </div>
             <h1 className="text-3xl md:text-4xl font-extrabold tracking-tight">
-              Protokol <span className="text-transparent bg-clip-text bg-gradient-to-r from-indigo-400 to-violet-400">Digital</span>
+              Laporan <span className="text-transparent bg-clip-text bg-gradient-to-r from-indigo-400 to-violet-400">Repertorium</span>
             </h1>
             <p className="text-slate-400 text-base font-medium max-w-lg">
               Laporan repertorium bulanan otomatis sesuai standar UUJN. Kelola kepatuhan dengan mudah.

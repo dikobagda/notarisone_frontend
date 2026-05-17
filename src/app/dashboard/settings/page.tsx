@@ -19,7 +19,8 @@ import {
   Phone,
   Calendar,
   Unlink,
-  RefreshCw
+  RefreshCw,
+  CreditCard
 } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -30,7 +31,7 @@ import { cn } from "@/lib/utils";
 import { signIn } from "next-auth/react";
 import { getApiUrl } from "@/lib/api";
 
-type Tab = "profile" | "security" | "office" | "google";
+type Tab = "profile" | "security" | "office" | "google" | "bank";
 
 export default function SettingsPage() {
   const { data: session, update: updateSession } = useSession();
@@ -45,6 +46,8 @@ export default function SettingsPage() {
   const [securityData, setSecurityData] = useState({ currentPassword: "", newPassword: "", confirmPassword: "" });
   const [officeData, setOfficeData] = useState({ name: "", address: "" });
   const [googleStatus, setGoogleStatus] = useState<{ isConnected: boolean; email: string | null }>({ isConnected: false, email: null });
+  const [bankAccounts, setBankAccounts] = useState<any[]>([]);
+  const [newBank, setNewBank] = useState({ bankName: "", accountNumber: "", accountHolder: "", isDefault: false });
   const [isGoogleStatusLoading, setIsGoogleStatusLoading] = useState(false);
 
   const fetchData = async () => {
@@ -93,10 +96,27 @@ export default function SettingsPage() {
     }
   };
 
+  const fetchBankAccounts = async () => {
+    if (!session?.backendToken) return;
+    try {
+      const url = getApiUrl("/api/profile/bank-accounts");
+      const res = await fetch(url, {
+        headers: { Authorization: `Bearer ${session.backendToken}` }
+      });
+      const result = await res.json();
+      if (result.success) {
+        setBankAccounts(result.data);
+      }
+    } catch (err) {
+      console.error("Fetch bank accounts error:", err);
+    }
+  };
+
   useEffect(() => {
     if (session) {
       fetchData();
       fetchGoogleStatus();
+      fetchBankAccounts();
     }
   }, [session]);
 
@@ -298,7 +318,10 @@ export default function SettingsPage() {
             { id: "profile", label: "Profil Saya", icon: User, desc: "Info personal & email" },
             { id: "security", label: "Keamanan", icon: ShieldCheck, desc: "Password & keamanan" },
             { id: "google", label: "Integrasi Google", icon: Calendar, desc: "Calendar & Docs" },
-            ...(isNotaris ? [{ id: "office", label: "Info Kantor", icon: Building2, desc: "Detail agensi & alamat" }] : []),
+            ...(isNotaris ? [
+              { id: "office", label: "Info Kantor", icon: Building2, desc: "Detail agensi & alamat" },
+              { id: "bank", label: "Rekening Bank", icon: CreditCard, desc: "Kelola rekening bank" }
+            ] : []),
           ].map((tab) => (
             <button
               key={tab.id}
@@ -630,11 +653,143 @@ export default function SettingsPage() {
                   </div>
                 </form>
               )}
+
+              {activeTab === "bank" && isNotaris && (
+                <div className="space-y-8 max-w-2xl">
+                  <div className="space-y-2">
+                    <h3 className="text-2xl font-black text-slate-900 tracking-tight flex items-center gap-3">
+                      <CreditCard className="h-6 w-6 text-indigo-500" /> Rekening Bank
+                    </h3>
+                    <p className="text-sm text-slate-400 font-medium italic">Kelola rekening bank yang akan ditampilkan pada invoice.</p>
+                  </div>
+
+                  {/* List of Bank Accounts */}
+                  <div className="space-y-4">
+                    {bankAccounts.length === 0 ? (
+                      <div className="text-center p-6 bg-slate-50 rounded-xl border border-dashed border-slate-200">
+                        <p className="text-sm text-slate-500 font-medium">Belum ada rekening bank yang terdaftar.</p>
+                      </div>
+                    ) : (
+                      bankAccounts.map((bank) => (
+                        <div key={bank.id} className="p-4 rounded-xl border border-slate-100 bg-slate-50/50 flex items-center justify-between">
+                          <div>
+                            <p className="font-bold text-slate-800">{bank.bankName}</p>
+                            <p className="text-sm text-slate-600">{bank.accountNumber} a/n {bank.accountHolder}</p>
+                            {bank.isDefault && (
+                              <span className="text-[10px] font-black text-emerald-600 uppercase tracking-widest mt-1 inline-block">Default</span>
+                            )}
+                          </div>
+                          <div className="flex items-center gap-2">
+                            {!bank.isDefault && (
+                              <Button 
+                                variant="outline" 
+                                size="sm"
+                                onClick={async () => {
+                                  const url = getApiUrl(`/api/profile/bank-accounts/${bank.id}`);
+                                  await fetch(url, {
+                                    method: "PATCH",
+                                    headers: {
+                                      "Content-Type": "application/json",
+                                      Authorization: `Bearer ${session?.backendToken}`
+                                    },
+                                    body: JSON.stringify({ isDefault: true })
+                                  });
+                                  fetchBankAccounts();
+                                }}
+                                className="h-8 text-xs font-bold"
+                              >
+                                Set Default
+                              </Button>
+                            )}
+                            <Button 
+                              variant="outline" 
+                              size="sm"
+                              onClick={async () => {
+                                if (!confirm("Hapus rekening ini?")) return;
+                                const url = getApiUrl(`/api/profile/bank-accounts/${bank.id}`);
+                                await fetch(url, {
+                                  method: "DELETE",
+                                  headers: { Authorization: `Bearer ${session?.backendToken}` }
+                                });
+                                fetchBankAccounts();
+                              }}
+                              className="h-8 text-xs font-bold text-red-500 hover:text-red-600"
+                            >
+                              Hapus
+                            </Button>
+                          </div>
+                        </div>
+                      ))
+                    )}
+                  </div>
+
+                  {/* Add New Bank Account Form */}
+                  <div className="pt-6 border-t border-slate-100 space-y-4">
+                    <h4 className="text-sm font-black text-slate-800 uppercase tracking-tight">Tambah Rekening Baru</h4>
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      <div className="space-y-2">
+                        <Label className="text-[10px] font-black uppercase tracking-widest text-slate-400">Nama Bank</Label>
+                        <Input 
+                          value={newBank.bankName} 
+                          onChange={e => setNewBank(prev => ({ ...prev, bankName: e.target.value }))}
+                          placeholder="Contoh: BANK MANDIRI"
+                          className="h-11 rounded-xl"
+                        />
+                      </div>
+                      <div className="space-y-2">
+                        <Label className="text-[10px] font-black uppercase tracking-widest text-slate-400">Nomor Rekening</Label>
+                        <Input 
+                          value={newBank.accountNumber} 
+                          onChange={e => setNewBank(prev => ({ ...prev, accountNumber: e.target.value }))}
+                          placeholder="Contoh: 123-456-789"
+                          className="h-11 rounded-xl"
+                        />
+                      </div>
+                      <div className="space-y-2 md:col-span-2">
+                        <Label className="text-[10px] font-black uppercase tracking-widest text-slate-400">Atas Nama</Label>
+                        <Input 
+                          value={newBank.accountHolder} 
+                          onChange={e => setNewBank(prev => ({ ...prev, accountHolder: e.target.value }))}
+                          placeholder="Contoh: PENAGRAHA"
+                          className="h-11 rounded-xl"
+                        />
+                      </div>
+                    </div>
+                    <Button 
+                      onClick={async () => {
+                        if (!newBank.bankName || !newBank.accountNumber || !newBank.accountHolder) {
+                          alert("Semua field harus diisi");
+                          return;
+                        }
+                        const url = getApiUrl("/api/profile/bank-accounts");
+                        const res = await fetch(url, {
+                          method: "POST",
+                          headers: {
+                            "Content-Type": "application/json",
+                            Authorization: `Bearer ${session?.backendToken}`
+                          },
+                          body: JSON.stringify(newBank)
+                        });
+                        const result = await res.json();
+                        if (result.success) {
+                          setNewBank({ bankName: "", accountNumber: "", accountHolder: "", isDefault: false });
+                          fetchBankAccounts();
+                        } else {
+                          alert(result.message);
+                        }
+                      }}
+                      className="h-11 bg-indigo-600 hover:bg-indigo-700 text-white font-bold text-xs uppercase tracking-widest px-6 rounded-xl"
+                    >
+                      Tambah Rekening
+                    </Button>
+                  </div>
+                </div>
+              )}
             </CardContent>
           </Card>
 
           <p className="text-[11px] text-slate-400 font-bold italic px-8 text-center uppercase tracking-[0.2em] opacity-40">
-            Securely managed by NotarisOne Infrastructure &copy; {new Date().getFullYear()}
+            Securely managed by penagraha Infrastructure &copy; {new Date().getFullYear()}
           </p>
         </div>
       </div>

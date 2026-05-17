@@ -21,7 +21,8 @@ import {
   Ruler,
   Users,
   X,
-  FileText
+  FileText,
+  ClipboardList
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -69,6 +70,8 @@ export default function EditPpatPage() {
   const [lokasi, setLokasi] = useState("");
   const [latitude, setLatitude] = useState("");
   const [longitude, setLongitude] = useState("");
+  const [serviceRequestId, setServiceRequestId] = useState<string | null>(null);
+  const [availableServiceRequests, setAvailableServiceRequests] = useState<any[]>([]);
 
   // Client
   const [selectedClient, setSelectedClient] = useState<any>(null);
@@ -112,6 +115,7 @@ export default function EditPpatPage() {
           setSelectedType(ppatSubType);
           if (d.targetFinalization) setTargetDate(new Date(d.targetFinalization).toISOString().split('T')[0]);
           if (d.client) setSelectedClient(d.client);
+          if (d.serviceRequestId) setServiceRequestId(d.serviceRequestId);
           if (d.ppatData) {
             setNop(d.ppatData.nop || "");
             setLuasTanah(d.ppatData.luasTanah?.toString() || "");
@@ -148,6 +152,27 @@ export default function EditPpatPage() {
     if (session) fetchClients();
   }, [session]);
 
+  // Fetch service requests for selected client
+  useEffect(() => {
+    const fetchServiceRequests = async () => {
+      const tenantId = (session?.user as any)?.tenantId;
+      if (!tenantId || !selectedClient?.id) {
+        setAvailableServiceRequests([]);
+        return;
+      }
+      try {
+        const res = await fetch(`/api/service-requests?tenantId=${tenantId}&clientId=${selectedClient.id}`, {
+          headers: { 'Authorization': `Bearer ${(session as any)?.backendToken}` }
+        });
+        const result = await res.json();
+        if (result.success) setAvailableServiceRequests(result.data);
+      } catch (err) {
+        console.error("SR fetch error:", err);
+      }
+    };
+    fetchServiceRequests();
+  }, [session, selectedClient]);
+
   const filteredClients = clientSearch
     ? allClients.filter(c => c.name.toLowerCase().includes(clientSearch.toLowerCase()) || c.nik?.includes(clientSearch))
     : allClients.slice(0, 6);
@@ -174,6 +199,7 @@ export default function EditPpatPage() {
           type: selectedType,         // Store the actual PPAT sub-type (AJB, HIBAH, etc.)
           clientId: selectedClient?.id,
           targetFinalization: targetDate || null,
+          serviceRequestId: serviceRequestId || null,
           ppatData: {
             nop,
             jenisAkta: selectedType,  // also persist sub-type inside ppatData as fallback
@@ -483,6 +509,33 @@ export default function EditPpatPage() {
                     />
                   </div>
                 </div>
+              </div>
+
+              {/* Linked Consultation */}
+              <div className="space-y-2">
+                <label className="text-[10px] font-black uppercase tracking-widest text-slate-400 ml-1 flex items-center gap-1.5">
+                  <ClipboardList className="h-3 w-3" /> Hubungkan dengan Konsultansi
+                </label>
+                <div className="relative">
+                  <select
+                    className="w-full h-12 rounded-xl border border-slate-200 px-4 text-sm font-bold bg-white focus:outline-none focus:ring-2 focus:ring-emerald-500/10 focus:border-emerald-500 appearance-none cursor-pointer"
+                    value={serviceRequestId || ""}
+                    onChange={(e) => setServiceRequestId(e.target.value || null)}
+                  >
+                    <option value="">— Tidak dihubungkan —</option>
+                    {availableServiceRequests.map((sr) => (
+                      <option key={sr.id} value={sr.id}>
+                        {sr.description ? (sr.description.substring(0, 50) + (sr.description.length > 50 ? '...' : '')) : `Konsultansi #${sr.id.substring(0, 8)}`}
+                      </option>
+                    ))}
+                  </select>
+                  <ChevronDown className="absolute right-4 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400 pointer-events-none" />
+                </div>
+                {availableServiceRequests.length === 0 && selectedClient && (
+                  <p className="text-[10px] text-slate-400 font-medium ml-1 italic">
+                    * Klien ini belum memiliki data konsultasi aktif.
+                  </p>
+                )}
               </div>
 
             </div>

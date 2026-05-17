@@ -22,6 +22,8 @@ import {
   PanelLeftOpen,
   Map,
   History,
+  Database,
+  Library,
 } from "lucide-react";
 
 const navItems = [
@@ -29,6 +31,7 @@ const navItems = [
     section: "UTAMA",
     items: [
       { title: "Beranda", url: "/dashboard", icon: LayoutDashboard, exact: true },
+      { title: "Konsultansi", url: "/dashboard/penerimaan", icon: ShieldCheck, exact: false },
       { title: "Manajemen Klien", url: "/dashboard/klien", icon: Users, exact: false },
       { title: "Akta Notaris", url: "/dashboard/deeds", icon: FileText, exact: false },
       { title: "Akta PPAT", url: "/dashboard/ppat", icon: Map, exact: false },
@@ -48,9 +51,19 @@ const navItems = [
   {
     section: "DATA & PENDUKUNG",
     items: [
-      { title: "Protokol Digital", url: "/dashboard/protokol", icon: BookOpen, exact: false },
+      { title: "Laporan Repertorium", url: "/dashboard/protokol", icon: BookOpen, exact: false },
       { title: "Manajemen Tim", url: "/dashboard/tim", icon: ShieldCheck, exact: false },
       { title: "Penjadwalan", url: "/dashboard/jadwal", icon: Calendar, exact: false },
+      { title: "Perpustakaan", url: "/dashboard/perpustakaan", icon: Library, exact: false },
+      { 
+        title: "Master Data", 
+        url: "/dashboard/master", 
+        icon: Database, 
+        exact: false,
+        subItems: [
+          { title: "Pekerjaan Tambahan", url: "/dashboard/master/pekerjaan-tambahan" },
+        ]
+      },
     ],
   },
   {
@@ -96,16 +109,13 @@ export function AppSidebar() {
       )}
     >
       {/* ── Logo + Toggle ── */}
-      <div className="px-3 flex items-center gap-3 border-b border-gray-200 h-16">
-        <div className="relative h-10 w-10 shrink-0 flex items-center justify-center rounded-xl bg-gradient-to-br from-indigo-500 to-violet-600 shadow-lg shadow-indigo-500/30 font-bold text-white text-xl">
-          N
+      <div className="px-3 flex items-center gap-2 border-b border-gray-200 h-20">
+        <div className="relative h-16 w-16 shrink-0 flex items-center justify-center">
+          <img src="/logo-penagraha.png" alt="Penagraha" className="h-full w-full object-contain" />
         </div>
 
         {!collapsed && (
-          <div className="flex-1 overflow-hidden">
-            <span className="text-slate-800 font-bold text-xl tracking-tight leading-none block whitespace-nowrap">NotarisOne</span>
-            <span className="text-slate-400 text-[10px] font-medium tracking-widest uppercase whitespace-nowrap">Legal Platform</span>
-          </div>
+          <div className="flex-1 overflow-hidden" />
         )}
 
         <button

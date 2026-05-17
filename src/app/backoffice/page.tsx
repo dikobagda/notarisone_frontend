@@ -116,7 +116,7 @@ export default function BackofficeDashboard() {
         <Card className="border-none shadow-sm bg-slate-900 text-white">
           <CardHeader>
             <CardTitle className="text-xl font-bold">Maintenance Info</CardTitle>
-            <CardDescription className="text-slate-400">Status core engine NotarisOne</CardDescription>
+            <CardDescription className="text-slate-400">Status core engine penagraha</CardDescription>
           </CardHeader>
           <CardContent className="space-y-6">
             <div className="p-4 rounded-xl bg-slate-800/50 border border-slate-700">

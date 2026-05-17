@@ -31,42 +31,42 @@ import { useEffect, useRef, useState } from "react";
 
 const GoogleDriveIcon = () => (
   <svg width="20" height="20" viewBox="0 0 87.3 78" xmlns="http://www.w3.org/2000/svg">
-    <path d="M6.6 66.85l3.85 6.65c.8 1.4 1.95 2.5 3.3 3.3L27.5 53h-21c0 1.55.4 3.1 1.1 4.5z" fill="#0066da"/>
-    <path d="M43.65 25L29.9 1.2c-1.35.8-2.5 1.9-3.3 3.3l-25.4 44A9.06 9.06 0 0 0 0 53h21z" fill="#00ac47"/>
-    <path d="M73.55 76.8c1.35-.8 2.5-1.9 3.3-3.3l1.6-2.75 7.65-13.25c.7-1.4 1.1-2.95 1.1-4.5H66.45l4.5 8.85z" fill="#ea4335"/>
-    <path d="M43.65 25L57.4 1.2C56.05.4 54.5 0 52.9 0H34.4c-1.6 0-3.15.45-4.5 1.2z" fill="#00832d"/>
-    <path d="M66.45 53h-45l-13.75 23.8c1.35.8 2.9 1.2 4.5 1.2h63.5c1.6 0 3.15-.45 4.5-1.2z" fill="#2684fc"/>
-    <path d="M73.4 26.5l-12.7-22c-.8-1.4-1.95-2.5-3.3-3.3L43.65 25l22.8 28h21c0-1.55-.4-3.1-1.1-4.5z" fill="#ffba00"/>
+    <path d="M6.6 66.85l3.85 6.65c.8 1.4 1.95 2.5 3.3 3.3L27.5 53h-21c0 1.55.4 3.1 1.1 4.5z" fill="#0066da" />
+    <path d="M43.65 25L29.9 1.2c-1.35.8-2.5 1.9-3.3 3.3l-25.4 44A9.06 9.06 0 0 0 0 53h21z" fill="#00ac47" />
+    <path d="M73.55 76.8c1.35-.8 2.5-1.9 3.3-3.3l1.6-2.75 7.65-13.25c.7-1.4 1.1-2.95 1.1-4.5H66.45l4.5 8.85z" fill="#ea4335" />
+    <path d="M43.65 25L57.4 1.2C56.05.4 54.5 0 52.9 0H34.4c-1.6 0-3.15.45-4.5 1.2z" fill="#00832d" />
+    <path d="M66.45 53h-45l-13.75 23.8c1.35.8 2.9 1.2 4.5 1.2h63.5c1.6 0 3.15-.45 4.5-1.2z" fill="#2684fc" />
+    <path d="M73.4 26.5l-12.7-22c-.8-1.4-1.95-2.5-3.3-3.3L43.65 25l22.8 28h21c0-1.55-.4-3.1-1.1-4.5z" fill="#ffba00" />
   </svg>
 );
 
 const GoogleDocsIcon = () => (
   <svg width="20" height="20" viewBox="0 0 48 48" xmlns="http://www.w3.org/2000/svg">
-    <path d="M28 4H12C9.8 4 8 5.8 8 8v32c0 2.2 1.8 4 4 4h24c2.2 0 4-1.8 4-4V16L28 4z" fill="#4285F4"/>
-    <path d="M28 4v12h12L28 4z" fill="#1A73E8"/>
-    <path d="M16 28h16v2H16zm0-4h16v2H16zm0-4h10v2H16z" fill="white"/>
+    <path d="M28 4H12C9.8 4 8 5.8 8 8v32c0 2.2 1.8 4 4 4h24c2.2 0 4-1.8 4-4V16L28 4z" fill="#4285F4" />
+    <path d="M28 4v12h12L28 4z" fill="#1A73E8" />
+    <path d="M16 28h16v2H16zm0-4h16v2H16zm0-4h10v2H16z" fill="white" />
   </svg>
 );
 
 const GoogleCalendarIcon = () => (
   <svg width="20" height="20" viewBox="0 0 48 48" xmlns="http://www.w3.org/2000/svg">
-    <path d="M36 4H12C9.8 4 8 5.8 8 8v32c0 2.2 1.8 4 4 4h24c2.2 0 4-1.8 4-4V8c0-2.2-1.8-4-4-4z" fill="white"/>
-    <path d="M36 4H12C9.8 4 8 5.8 8 8v4h32V8c0-2.2-1.8-4-4-4z" fill="#EA4335"/>
-    <path d="M8 12h32v6H8z" fill="#EA4335"/>
-    <path d="M8 18h32v22H8z" fill="white"/>
-    <rect x="14" y="24" width="6" height="6" rx="1" fill="#4285F4"/>
-    <rect x="22" y="24" width="6" height="6" rx="1" fill="#34A853"/>
-    <rect x="30" y="24" width="4" height="6" rx="1" fill="#FBBC05"/>
-    <rect x="14" y="32" width="6" height="4" rx="1" fill="#34A853"/>
-    <rect x="22" y="32" width="6" height="4" rx="1" fill="#EA4335"/>
-    <path d="M14 10h4v4h-4zm16 0h4v4h-4z" fill="white"/>
+    <path d="M36 4H12C9.8 4 8 5.8 8 8v32c0 2.2 1.8 4 4 4h24c2.2 0 4-1.8 4-4V8c0-2.2-1.8-4-4-4z" fill="white" />
+    <path d="M36 4H12C9.8 4 8 5.8 8 8v4h32V8c0-2.2-1.8-4-4-4z" fill="#EA4335" />
+    <path d="M8 12h32v6H8z" fill="#EA4335" />
+    <path d="M8 18h32v22H8z" fill="white" />
+    <rect x="14" y="24" width="6" height="6" rx="1" fill="#4285F4" />
+    <rect x="22" y="24" width="6" height="6" rx="1" fill="#34A853" />
+    <rect x="30" y="24" width="4" height="6" rx="1" fill="#FBBC05" />
+    <rect x="14" y="32" width="6" height="4" rx="1" fill="#34A853" />
+    <rect x="22" y="32" width="6" height="4" rx="1" fill="#EA4335" />
+    <path d="M14 10h4v4h-4zm16 0h4v4h-4z" fill="white" />
   </svg>
 );
 
 const GoogleCloudIcon = () => (
   <svg width="20" height="20" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
-    <path d="M12.19 2.38a9.344 9.344 0 0 0-9.234 6.893C.9 9.966-.36 11.6.072 13.567c.444 2.004 2.109 3.547 4.121 3.787A4.484 4.484 0 0 0 4.55 17.5h11a5.5 5.5 0 0 0 1.118-10.871 7.5 7.5 0 0 0-4.468-4.241z" fill="#4285F4"/>
-    <path d="M15.55 17.5h-11a4.484 4.484 0 0 1-.357-.146C1.88 15.635.85 12.86 2.01 10.468a7.344 7.344 0 0 1 .946-1.595 9.344 9.344 0 0 0-1.695 4.4c-.44 2.004.82 3.875 2.831 4.227z" fill="#1A73E8" opacity=".4"/>
+    <path d="M12.19 2.38a9.344 9.344 0 0 0-9.234 6.893C.9 9.966-.36 11.6.072 13.567c.444 2.004 2.109 3.547 4.121 3.787A4.484 4.484 0 0 0 4.55 17.5h11a5.5 5.5 0 0 0 1.118-10.871 7.5 7.5 0 0 0-4.468-4.241z" fill="#4285F4" />
+    <path d="M15.55 17.5h-11a4.484 4.484 0 0 1-.357-.146C1.88 15.635.85 12.86 2.01 10.468a7.344 7.344 0 0 1 .946-1.595 9.344 9.344 0 0 0-1.695 4.4c-.44 2.004.82 3.875 2.831 4.227z" fill="#1A73E8" opacity=".4" />
   </svg>
 );
 
@@ -221,7 +221,7 @@ const features = [
   { icon: <FileText className="h-5 w-5" />, color: "text-indigo-600 bg-indigo-50", title: "Manajemen Akta & Dokumen", desc: "Kelola draf, finalisasi, dan versi akta dalam satu alur terintegrasi. Pencarian instan dalam milidetik.", badge: null },
   { icon: <ScanLine className="h-5 w-5" />, color: "text-violet-600 bg-violet-50", title: "OCR Scan Dokumen", desc: "Scan KTP, NPWP, dan sertifikat tanah langsung dari aplikasi. AI mengekstrak data otomatis.", badge: "AI-Powered" },
   { icon: <Users className="h-5 w-5" />, color: "text-emerald-600 bg-emerald-50", title: "Database Klien & Stakeholder", desc: "Simpan NIK, riwayat akta, dan relasi antar-klien. Isi formulir baru untuk klien lama dalam hitungan detik.", badge: null },
-  { icon: <BookOpen className="h-5 w-5" />, color: "text-amber-600 bg-amber-50", title: "Register & Repertorium", desc: "Buku protokol digital sesuai standar UUJN. Generate laporan bulanan otomatis tanpa pencatatan manual.", badge: null },
+  { icon: <BookOpen className="h-5 w-5" />, color: "text-amber-600 bg-amber-50", title: "Register & Repertorium", desc: "Laporan Repertorium sesuai standar UUJN. Generate laporan bulanan otomatis tanpa pencatatan manual.", badge: null },
   { icon: <Calendar className="h-5 w-5" />, color: "text-sky-600 bg-sky-50", title: "Jadwal & Kalender", desc: "Atur jadwal penandatanganan, konsultasi, dan survei lapangan. Sinkron otomatis ke Google Calendar.", badge: "Sync Google" },
   { icon: <Banknote className="h-5 w-5" />, color: "text-orange-600 bg-orange-50", title: "Manajemen Keuangan", desc: "Buat invoice, catat pembayaran, dan pantau status tagihan secara real-time dengan laporan otomatis.", badge: null },
   { icon: <Eye className="h-5 w-5" />, color: "text-red-600 bg-red-50", title: "Audit Trail", desc: "Setiap aksi tercatat permanen — siapa melakukan apa dan kapan. Kontrol penuh atas aktivitas staf.", badge: null },
@@ -237,25 +237,18 @@ const trustPoints = [
 ];
 
 const testimonials = [
-  { text: "Sejak pakai NotarisOne, nyari draf akta klien lama hitungan detik. Staf saya tidak perlu lagi bongkar-bongkar lemari arsip.", name: "Ahmad Setiawan, SH., M.Kn.", role: "Notaris & PPAT Kota Bandung", initials: "AS", highlight: false },
+  { text: "Sejak pakai Penagraha, nyari draf akta klien lama hitungan detik. Staf saya tidak perlu lagi bongkar-bongkar lemari arsip.", name: "Ahmad Setiawan, SH., M.Kn.", role: "Notaris & PPAT Kota Bandung", initials: "AS", highlight: false },
   { text: "Fitur Audit Trail sangat meyakinkan saya. Bisa pantau kinerja pegawai dari mana saja. Pelaporannya pun rapi dan akurat.", name: "Diana Rosalina, SH., M.Kn.", role: "Notaris Jakarta Selatan", initials: "DR", highlight: true },
-  { text: "UI/UX-nya luar biasa bersih. Aplikasi legal biasanya kaku, tapi NotarisOne modern sekali. Pegawai saya langsung paham tanpa training lama.", name: "Budi Pratama, SH.", role: "Kepala Bagian IT, Kantor Notaris", initials: "BP", highlight: false },
+  { text: "UI/UX-nya luar biasa bersih. Aplikasi legal biasanya kaku, tapi Penagraha modern sekali. Pegawai saya langsung paham tanpa training lama.", name: "Budi Pratama, SH.", role: "Kepala Bagian IT, Kantor Notaris", initials: "BP", highlight: false },
 ];
 
 // ─── Logo (matches dashboard sidebar) ───────────────────────────────────────
 
 function BrandLogo({ size = "md" }: { size?: "sm" | "md" | "lg" }) {
-  const boxSize = size === "lg" ? "h-11 w-11 text-2xl" : size === "sm" ? "h-7 w-7 text-base" : "h-9 w-9 text-xl";
-  const textSize = size === "lg" ? "text-2xl" : size === "sm" ? "text-base" : "text-xl";
+  const boxSize = size === "lg" ? "h-28 w-28" : size === "sm" ? "h-20 w-20" : "h-24 w-24";
   return (
-    <div className="flex items-center gap-2.5">
-      <div className={`relative ${boxSize} shrink-0 flex items-center justify-center rounded-xl bg-gradient-to-br from-indigo-500 to-violet-600 shadow-lg shadow-indigo-500/30 font-bold text-white`}>
-        N
-      </div>
-      <div className="flex flex-col leading-none">
-        <span className={`font-bold ${textSize} tracking-tight text-slate-900`}>NotarisOne</span>
-        <span className="text-[9px] font-semibold tracking-widest uppercase text-slate-400 mt-0.5">Legal Platform</span>
-      </div>
+    <div className={`relative ${boxSize} shrink-0`}>
+      <img src="/logo-penagraha.png" alt="Penagraha" className="h-full w-full object-contain" />
     </div>
   );
 }
@@ -276,10 +269,9 @@ export default function LandingPage() {
     <div className="flex flex-col min-h-screen bg-white text-slate-900 font-sans antialiased overflow-x-hidden selection:bg-indigo-100">
 
       {/* ── NAVBAR ── */}
-      <header className={`fixed top-0 w-full z-50 transition-all duration-300 ${
-        scrolled ? "bg-white/95 backdrop-blur-xl border-b border-slate-100 shadow-md shadow-slate-200/60" : "bg-transparent"
-      }`}>
-        <div className="max-w-7xl mx-auto px-6 lg:px-12 h-16 flex items-center justify-between">
+      <header className={`fixed top-0 w-full z-50 transition-all duration-300 ${scrolled ? "bg-white/95 backdrop-blur-xl border-b border-slate-100 shadow-md shadow-slate-200/60" : "bg-transparent"
+        }`}>
+        <div className="max-w-7xl mx-auto px-6 lg:px-12 h-24 flex items-center justify-between">
           <BrandLogo size="sm" />
 
           <nav className="hidden md:flex items-center gap-8">
@@ -334,7 +326,7 @@ export default function LandingPage() {
         )}
       </header>
 
-      <main className="flex-1 pt-16">
+      <main className="flex-1 pt-24">
 
         {/* ── HERO ── */}
         <section className="relative pt-28 pb-24 px-6 flex flex-col items-center text-center overflow-hidden" style={{ minHeight: "88vh" }}>
@@ -511,11 +503,10 @@ export default function LandingPage() {
 
             <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
               {testimonials.map((t, i) => (
-                <div key={i} className={`p-8 rounded-2xl border ${
-                  t.highlight
+                <div key={i} className={`p-8 rounded-2xl border ${t.highlight
                     ? "bg-indigo-600 border-transparent shadow-2xl shadow-indigo-600/25 md:-translate-y-3"
                     : "bg-white border-slate-100 shadow-sm"
-                } transition-all duration-300`}>
+                  } transition-all duration-300`}>
                   <div className={`flex gap-1 mb-5 ${t.highlight ? "text-amber-300" : "text-amber-400"}`}>
                     {[...Array(5)].map((_, j) => <Star key={j} className="fill-current w-4 h-4" />)}
                   </div>
@@ -609,7 +600,7 @@ export default function LandingPage() {
           </div>
 
           <div className="pt-8 border-t border-slate-200 flex flex-col md:flex-row items-center justify-between gap-3 text-sm text-slate-400">
-            <p>© {new Date().getFullYear()} NotarisOne. Hak Cipta Dilindungi Undang-Undang.</p>
+            <p>© {new Date().getFullYear()} Penagraha. Hak Cipta Dilindungi Undang-Undang.</p>
             <div className="flex items-center gap-5">
               <span className="flex items-center gap-1.5">
                 <ShieldCheck className="h-3.5 w-3.5 text-emerald-500" />

@@ -264,9 +264,9 @@ export default function DashboardPage() {
             <Button variant="outline" className="h-11 px-5 rounded-xl border-white/20 bg-white/10 text-white hover:bg-white/20 backdrop-blur-md font-semibold gap-2 text-sm">
               <BarChart3 className="h-4 w-4" /> Lihat Laporan
             </Button>
-            <Link href="/dashboard/klien/create">
+            <Link href="/dashboard/penerimaan/baru">
               <Button className="h-11 px-5 rounded-xl bg-blue-500 hover:bg-blue-400 text-white font-bold gap-2 text-sm shadow-lg shadow-blue-500/30">
-                <Plus className="h-4 w-4" /> Tambah Klien Baru
+                <Plus className="h-4 w-4" /> Mulai Konsultansi Baru
               </Button>
             </Link>
           </div>
@@ -432,7 +432,7 @@ export default function DashboardPage() {
             )}
             
             <p className="text-[9px] text-slate-400 font-medium leading-tight">
-              Kapasitas penyimpanan otomatis menyesuaikan dengan paket NotarisOne Anda.
+              Kapasitas penyimpanan otomatis menyesuaikan dengan paket penagraha Anda.
             </p>
           </div>
         </div>

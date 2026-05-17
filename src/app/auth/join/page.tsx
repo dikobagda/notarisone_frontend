@@ -161,7 +161,7 @@ function JoinPageContent() {
                 N
               </div>
               <div>
-                <h2 className="font-bold text-xl tracking-tight">NotarisOne</h2>
+                <h2 className="font-bold text-xl tracking-tight">penagraha</h2>
                 <p className="text-white/60 text-[10px] uppercase tracking-widest font-bold">Undangan Tim</p>
               </div>
             </div>

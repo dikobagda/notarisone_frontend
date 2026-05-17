@@ -21,17 +21,17 @@ export default function TermsPage() {
             <section className="space-y-3">
               <h2 className="text-xl font-bold text-foreground">1. Penerimaan Ketentuan</h2>
               <p>
-                Dengan mengakses dan menggunakan platform NotarisOne, Anda setuju untuk terikat oleh Syarat dan Ketentuan ini. Jika Anda tidak setuju, harap jangan menggunakan layanan kami.
+                Dengan mengakses dan menggunakan platform penagraha, Anda setuju untuk terikat oleh Syarat dan Ketentuan ini. Jika Anda tidak setuju, harap jangan menggunakan layanan kami.
               </p>
             </section>
 
             <section className="space-y-3">
               <h2 className="text-xl font-bold text-foreground">2. Masa Uji Coba (Free Trial)</h2>
               <p>
-                NotarisOne menyediakan masa uji coba gratis selama <strong>21 (dua puluh satu) hari</strong> untuk pengguna baru. Selama masa ini, Anda memiliki akses ke fitur-fitur tertentu untuk mengevaluasi layanan kami.
+                penagraha menyediakan masa uji coba gratis selama <strong>21 (dua puluh satu) hari</strong> untuk pengguna baru. Selama masa ini, Anda memiliki akses ke fitur-fitur tertentu untuk mengevaluasi layanan kami.
               </p>
               <div className="bg-amber-500/10 border border-amber-500/20 rounded-xl p-4 text-amber-700 dark:text-amber-400 font-medium text-sm">
-                PENTING: Setelah masa uji coba 21 hari berakhir, jika Anda tidak melakukan upgrade ke paket berbayar, sistem NotarisOne akan secara otomatis menghapus seluruh data yang telah Anda masukkan tanpa terkecuali untuk menjaga efisiensi sistem dan keamanan data.
+                PENTING: Setelah masa uji coba 21 hari berakhir, jika Anda tidak melakukan upgrade ke paket berbayar, sistem penagraha akan secara otomatis menghapus seluruh data yang telah Anda masukkan tanpa terkecuali untuk menjaga efisiensi sistem dan keamanan data.
               </div>
             </section>
 
@@ -45,7 +45,7 @@ export default function TermsPage() {
             <section className="space-y-3">
               <h2 className="text-xl font-bold text-foreground">4. Batasan Tanggung Jawab</h2>
               <p>
-                NotarisOne tidak bertanggung jawab atas kerugian data yang terjadi karena kelalaian pengguna atau kegagalan untuk melakukan upgrade akun setelah masa uji coba berakhir.
+                penagraha tidak bertanggung jawab atas kerugian data yang terjadi karena kelalaian pengguna atau kegagalan untuk melakukan upgrade akun setelah masa uji coba berakhir.
               </p>
             </section>
 

@@ -80,7 +80,24 @@ const nextConfig: NextConfig = {
         source: '/api/profile/:path*',
         destination: `${backendUrl}/api/profile/:path*`,
       },
+      {
+        source: '/api/additional-jobs/:path*',
+        destination: `${backendUrl}/api/additional-jobs/:path*`,
+      },
+      {
+        source: '/api/service-requests/:path*',
+        destination: `${backendUrl}/api/service-requests/:path*`,
+      },
+      {
+        source: '/api/library/:path*',
+        destination: `${backendUrl}/api/library/:path*`,
+      },
     ];
+  },
+  experimental: {
+    turbopack: {
+      root: "../../",
+    },
   },
 };
 

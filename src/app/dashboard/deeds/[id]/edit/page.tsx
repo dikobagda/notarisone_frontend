@@ -19,7 +19,8 @@ import {
   Users,
   X,
   FileText,
-  Clock
+  Clock,
+  ClipboardList
 } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -59,6 +60,9 @@ export default function EditDeedPage() {
   const [title, setTitle] = useState("");
   const [selectedType, setSelectedType] = useState("");
   const [targetDate, setTargetDate] = useState("");
+  const [serviceRequestId, setServiceRequestId] = useState<string | null>(null);
+  const [allConsultations, setAllConsultations] = useState<any[]>([]);
+  const [isConsultationDropdownOpen, setIsConsultationDropdownOpen] = useState(false);
 
   // Dropdown states
   const [isTypeDropdownOpen, setIsTypeDropdownOpen] = useState(false);
@@ -80,7 +84,11 @@ export default function EditDeedPage() {
           setDeed(d);
           setTitle(d.title || "");
           setSelectedType(d.type || "");
+          setServiceRequestId(d.serviceRequestId || null);
           if (d.targetFinalization) setTargetDate(new Date(d.targetFinalization).toISOString().split('T')[0]);
+          
+          // Fetch consultations for this client
+          if (d.clientId) fetchConsultations(d.clientId);
         }
       } catch (err) {
         console.error("Fetch error:", err);
@@ -88,6 +96,20 @@ export default function EditDeedPage() {
         setIsLoading(false);
       }
     };
+
+    const fetchConsultations = async (clientId: string) => {
+      try {
+        const tenantId = (session?.user as any)?.tenantId;
+        const res = await fetch(`/api/service-requests?tenantId=${tenantId}&clientId=${clientId}`, {
+          headers: { 'Authorization': `Bearer ${(session as any)?.backendToken}` }
+        });
+        const result = await res.json();
+        if (result.success) setAllConsultations(result.data);
+      } catch (err) {
+        console.error("Fetch consultations error:", err);
+      }
+    };
+
     if (session) fetchDeed();
   }, [id, session]);
 
@@ -112,6 +134,7 @@ export default function EditDeedPage() {
           title,
           type: selectedType,
           targetFinalization: targetDate || null,
+          serviceRequestId: serviceRequestId || null,
         }),
       });
       const result = await res.json();
@@ -349,6 +372,83 @@ export default function EditDeedPage() {
                 </div>
               </div>
 
+            </div>
+          </div>
+
+          {/* Section 3 — Konsultansi Terkait */}
+          <div className="bg-white rounded-2xl border border-gray-100 shadow-sm overflow-visible">
+            <div className="flex items-center gap-3 px-6 py-4 border-b border-slate-100">
+              <div className="h-7 w-7 rounded-lg bg-indigo-50 border border-indigo-100 flex items-center justify-center">
+                <ClipboardList className={`h-3.5 w-3.5 ${serviceRequestId ? 'text-indigo-600' : 'text-slate-400'}`} />
+              </div>
+              <span className="text-sm font-black text-slate-700">Konsultansi Terkait</span>
+            </div>
+            <div className="p-6">
+              {serviceRequestId ? (
+                <div className="flex items-center justify-between p-4 rounded-xl border-2 border-indigo-100 bg-indigo-50/30">
+                  <div className="flex items-center gap-3">
+                    <div className="h-10 w-10 rounded-xl bg-indigo-100 border border-indigo-200 flex items-center justify-center">
+                      <ClipboardList className="h-5 w-5 text-indigo-600" />
+                    </div>
+                    <div>
+                      <p className="font-bold text-slate-900 truncate max-w-[300px]">
+                        {allConsultations.find(c => c.id === serviceRequestId)?.description || "Konsultansi Terpilih"}
+                      </p>
+                      <p className="text-[10px] font-mono font-bold text-indigo-600 uppercase tracking-widest mt-0.5">ID: {serviceRequestId}</p>
+                    </div>
+                  </div>
+                  <button
+                    className="h-8 w-8 rounded-lg text-slate-300 hover:text-red-500 hover:bg-red-50 flex items-center justify-center transition-colors cursor-pointer"
+                    onClick={() => setServiceRequestId(null)}
+                  >
+                    <X className="h-4 w-4" />
+                  </button>
+                </div>
+              ) : (
+                <div className="relative">
+                  <div
+                    onClick={() => setIsConsultationDropdownOpen(!isConsultationDropdownOpen)}
+                    className={`flex h-12 items-center justify-between border px-4 text-sm cursor-pointer transition-all rounded-xl ${
+                      isConsultationDropdownOpen
+                        ? "border-indigo-400 ring-2 ring-indigo-100"
+                        : "border-slate-200 hover:border-indigo-300 hover:ring-2 hover:ring-indigo-50"
+                    }`}
+                  >
+                    <span className="text-slate-400 font-medium text-sm">Hubungkan dengan sesi konsultansi...</span>
+                    <ChevronDown className={`h-4 w-4 text-slate-400 transition-transform ${isConsultationDropdownOpen ? "rotate-180 text-indigo-500" : ""}`} />
+                  </div>
+                  {isConsultationDropdownOpen && (
+                    <>
+                      <div className="fixed inset-0 z-40" onClick={() => setIsConsultationDropdownOpen(false)} />
+                      <div className="absolute top-full left-0 w-full mt-1 bg-white border border-slate-100 rounded-2xl shadow-2xl z-50 overflow-hidden">
+                        <div className="max-h-52 overflow-y-auto p-2">
+                          {allConsultations.length === 0 ? (
+                            <div className="p-6 text-center text-xs font-bold text-slate-400">Tidak ada data konsultansi klien ini</div>
+                          ) : (
+                            allConsultations.map((c) => (
+                              <button
+                                key={c.id}
+                                className="w-full flex items-center gap-3 p-3 hover:bg-indigo-50 rounded-xl transition-colors text-left cursor-pointer"
+                                onClick={() => { setServiceRequestId(c.id); setIsConsultationDropdownOpen(false); }}
+                              >
+                                <div className="h-8 w-8 rounded-xl bg-slate-50 border border-slate-100 flex items-center justify-center text-slate-400 group-hover:text-indigo-600">
+                                  <ClipboardList className="h-4 w-4" />
+                                </div>
+                                <div>
+                                  <p className="font-bold text-slate-900 text-sm truncate max-w-[300px]">{c.description || "Tanpa Deskripsi"}</p>
+                                  <p className="text-[10px] font-mono text-slate-400 uppercase tracking-wider">
+                                    {new Date(c.createdAt).toLocaleDateString('id-ID')} · {c.serviceCategory}
+                                  </p>
+                                </div>
+                              </button>
+                            ))
+                          )}
+                        </div>
+                      </div>
+                    </>
+                  )}
+                </div>
+              )}
             </div>
           </div>
 

@@ -467,7 +467,7 @@ function SubscriptionPageContent() {
           <div className="space-y-5 text-center md:text-left max-w-xl">
             <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-indigo-500/15 border border-indigo-500/25 text-indigo-300 text-[10px] font-bold uppercase tracking-[0.15em]">
               <Sparkles className="h-3 w-3" />
-              NotarisOne Premium
+              penagraha Premium
             </div>
             <h1 className="text-3xl md:text-4xl font-extrabold text-white tracking-tight leading-tight">
               Kantor yang Lebih Efisien<br />
@@ -506,7 +506,7 @@ function SubscriptionPageContent() {
       {/* ── Section Header ── */}
       <div className="text-center space-y-2">
         <h2 className="text-2xl font-extrabold text-slate-900 tracking-tight">Pilih Paket Langganan</h2>
-        <p className="text-sm text-slate-500 font-medium">Semua paket sudah termasuk akses penuh ke fitur inti NotarisOne</p>
+        <p className="text-sm text-slate-500 font-medium">Semua paket sudah termasuk akses penuh ke fitur inti penagraha</p>
       </div>
 
       {/* ── Pricing Cards ── */}
