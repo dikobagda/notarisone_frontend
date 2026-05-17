@@ -94,11 +94,11 @@ const nextConfig: NextConfig = {
       },
     ];
   },
-  experimental: {
-    turbopack: {
-      root: "../../",
-    },
-  },
+  // experimental: {
+  //   turbopack: {
+  //     root: "../../",
+  //   },
+  // },
 };
 
 export default nextConfig;
