@@ -25,6 +25,9 @@ export default function EditConsultationPage({ params }: { params: Promise<{ id:
   const { data: session } = useSession();
   const router = useRouter();
   
+  const role = (session?.user as any)?.role;
+  const allowedMenus = (session?.user as any)?.allowedMenus || [];
+  const hasMasterDataPermission = role === "NOTARIS" || role === "SUPERADMIN" || role === "ADMIN" || allowedMenus.includes("Master Data");
   const [fetching, setFetching] = useState(true);
   const [loading, setLoading] = useState(false);
   const [uploadingDoc, setUploadingDoc] = useState<string | null>(null);
@@ -362,7 +365,9 @@ export default function EditConsultationPage({ params }: { params: Promise<{ id:
               <h2 className="text-xl font-bold text-slate-900 flex items-center gap-2">
                  <AlertCircle className="h-5 w-5 text-amber-500" /> Biaya Tambahan
               </h2>
-              <QuickAddAdditionalJob onSuccess={(newJob) => setAdditionalJobsMaster(prev => [...prev, newJob])} />
+              {hasMasterDataPermission && (
+                <QuickAddAdditionalJob onSuccess={(newJob) => setAdditionalJobsMaster(prev => [...prev, newJob])} />
+              )}
             </div>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
               {additionalJobsMaster.map(job => (

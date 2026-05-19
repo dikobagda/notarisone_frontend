@@ -48,7 +48,7 @@ type LineItem = {
 };
 
 type ClientData = { id: string; name: string; nik: string };
-type DeedData = { id: string; title: string; deedNumber: string };
+type DeedData = { id: string; title: string; deedNumber: string; serviceRequestId?: string };
 
 export default function CreateInvoicePage() {
   const router = useRouter();

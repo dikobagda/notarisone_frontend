@@ -121,6 +121,19 @@ export function AppSidebar() {
     ENTERPRISE: "bg-amber-100 text-amber-600 border border-amber-200",
   };
 
+  const allowedMenus = (user as any)?.allowedMenus || [];
+  const isNotarisOrAdmin = role === "NOTARIS" || role === "SUPERADMIN" || role === "ADMIN";
+  console.log("AppSidebar Debug - role:", role, "allowedMenus:", allowedMenus);
+
+  const filteredNavItems = navItems.map((group) => {
+    const items = group.items.filter((item) => {
+      if (isNotarisOrAdmin) return true;
+      if (item.title === "Beranda") return true;
+      return allowedMenus.includes(item.title);
+    });
+    return { ...group, items };
+  }).filter((group) => group.items.length > 0);
+
   return (
     <aside
       className={cn(
@@ -155,7 +168,7 @@ export function AppSidebar() {
 
       {/* ── Navigation ── */}
       <nav className="relative flex-1 overflow-y-auto py-4 px-2 space-y-5 scrollbar-none">
-        {navItems.map((group) => (
+        {filteredNavItems.map((group) => (
           <div key={group.section}>
             {!collapsed && (
               <p className="px-3 mb-2 text-[9px] font-black uppercase tracking-[0.22em] text-slate-400">

@@ -61,6 +61,23 @@ const AVATAR_COLORS = [
 
 const PAGE_SIZE = 10;
 
+const CONFIGURABLE_MENUS = [
+  "Konsultansi",
+  "Manajemen Klien",
+  "Akta Notaris",
+  "Akta PPAT",
+  "Non-Akta",
+  "Keuangan",
+  "Laporan Repertorium",
+  "Manajemen Tim",
+  "Penjadwalan",
+  "Perpustakaan",
+  "Master Data",
+  "Langganan",
+  "Audit Log",
+  "Pengaturan"
+];
+
 export default function TeamPage() {
   const { data: session } = useSession();
   const [searchTerm, setSearchTerm] = useState("");
@@ -85,6 +102,7 @@ export default function TeamPage() {
   const [editRole, setEditRole] = useState("PEGAWAI");
   const [isEditing, setIsEditing] = useState(false);
   const [isLocking, setIsLocking] = useState(false);
+  const [editAllowedMenus, setEditAllowedMenus] = useState<string[]>([]);
 
   const fetchTeamData = async () => {
     const tenantId = (session?.user as any)?.tenantId;
@@ -224,7 +242,7 @@ export default function TeamPage() {
       const res = await fetch(`/api/team/${selectedUser.id}?tenantId=${tenantId}`, {
         method: "PUT",
         headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
-        body: JSON.stringify({ phone: editPhone, role: editRole })
+        body: JSON.stringify({ phone: editPhone, role: editRole, allowedMenus: editRole === "PEGAWAI" ? editAllowedMenus : null })
       });
       const result = await res.json();
       if (result.success) {
@@ -572,6 +590,7 @@ export default function TeamPage() {
                                         setSelectedUser(member);
                                         setEditPhone(member.phone || "");
                                         setEditRole(member.role || "PEGAWAI");
+                                        setEditAllowedMenus(member.allowedMenus || []);
                                         setIsEditDialogOpen(true);
                                       }}
                                       variant="ghost" 
@@ -726,9 +745,8 @@ export default function TeamPage() {
         </DialogContent>
       </Dialog>
 
-      {/* Edit User Dialog */}
       <Dialog open={isEditDialogOpen} onOpenChange={setIsEditDialogOpen}>
-        <DialogContent className="sm:max-w-[425px] rounded-2xl p-0 bg-white">
+        <DialogContent className={`rounded-2xl p-0 bg-white transition-all duration-300 ${editRole === "PEGAWAI" ? "sm:max-w-[550px]" : "sm:max-w-[425px]"}`}>
           <DialogHeader className="p-6 border-b border-slate-100 bg-slate-50 rounded-t-2xl">
             <DialogTitle className="text-lg font-bold text-slate-900">Edit Data Anggota</DialogTitle>
           </DialogHeader>
@@ -756,6 +774,41 @@ export default function TeamPage() {
                   onChange={(val) => setEditRole(val)}
                 />
               </div>
+
+              {editRole === "PEGAWAI" && (
+                <div className="flex flex-col gap-3 border-t border-slate-100 pt-5">
+                  <Label className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-400">HAK AKSES MENU</Label>
+                  <div className="grid grid-cols-2 gap-2.5 max-h-[220px] overflow-y-auto pr-1">
+                    {CONFIGURABLE_MENUS.map((menu) => {
+                      const isChecked = editAllowedMenus.includes(menu);
+                      return (
+                        <label 
+                          key={menu} 
+                          className={`flex items-center gap-2.5 p-2.5 rounded-xl border text-xs font-semibold cursor-pointer transition-all select-none ${
+                            isChecked 
+                              ? "bg-indigo-50/50 border-indigo-200 text-indigo-700 shadow-sm" 
+                              : "border-slate-200 text-slate-600 hover:bg-slate-50"
+                          }`}
+                        >
+                          <input 
+                            type="checkbox"
+                            checked={isChecked}
+                            onChange={(e) => {
+                              if (e.target.checked) {
+                                setEditAllowedMenus([...editAllowedMenus, menu]);
+                              } else {
+                                setEditAllowedMenus(editAllowedMenus.filter(m => m !== menu));
+                              }
+                            }}
+                            className="rounded border-slate-300 text-indigo-600 focus:ring-indigo-500 h-3.5 w-3.5 shrink-0"
+                          />
+                          <span className="truncate">{menu}</span>
+                        </label>
+                      );
+                    })}
+                  </div>
+                </div>
+              )}
             </div>
             <DialogFooter className="px-6 pb-8 bg-transparent justify-end border-none">
               <Button 

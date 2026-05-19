@@ -24,6 +24,9 @@ export default function NewConsultationPage() {
   const { data: session } = useSession();
   const router = useRouter();
   
+  const role = (session?.user as any)?.role;
+  const allowedMenus = (session?.user as any)?.allowedMenus || [];
+  const hasMasterDataPermission = role === "NOTARIS" || role === "SUPERADMIN" || role === "ADMIN" || allowedMenus.includes("Master Data");
   const [loading, setLoading] = useState(false);
   const [uploadingDoc, setUploadingDoc] = useState<string | null>(null);
   const [additionalJobs, setAdditionalJobs] = useState<any[]>([]);
@@ -332,7 +335,9 @@ export default function NewConsultationPage() {
             <div className="space-y-4">
               <div className="flex items-center justify-between">
                 <label className="text-sm font-bold text-slate-700 italic opacity-60">Biaya Tambahan / Pengeluaran Instansi</label>
-                <QuickAddAdditionalJob onSuccess={(newJob) => setAdditionalJobs(prev => [...prev, newJob])} />
+                {hasMasterDataPermission && (
+                  <QuickAddAdditionalJob onSuccess={(newJob) => setAdditionalJobs(prev => [...prev, newJob])} />
+                )}
               </div>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
                 {additionalJobs.map(job => (

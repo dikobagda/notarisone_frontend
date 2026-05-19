@@ -54,6 +54,7 @@ export const authOptions: NextAuthOptions = {
               tenantName: data.data.tenant.name,
               plan: data.data.user.plan,
               token: data.data.token, 
+              allowedMenus: data.data.user.allowedMenus,
             };
           }
           throw new Error(data?.message || "Login gagal");
@@ -80,6 +81,7 @@ export const authOptions: NextAuthOptions = {
           token.tenantName = (user as any).tenantName;
           token.plan = (user as any).plan;
           token.backendToken = (user as any).token; 
+          token.allowedMenus = (user as any).allowedMenus;
         } else if (account && account.provider === 'google') {
           try {
             const cookieStore = await cookies();
@@ -113,6 +115,7 @@ export const authOptions: NextAuthOptions = {
                 token.backendToken = oldToken.backendToken || token.backendToken;
                 token.email = oldToken.email || token.email;
                 token.name = oldToken.name || token.name;
+                token.allowedMenus = oldToken.allowedMenus || token.allowedMenus;
               } else if (!token.id) {
                 token.id = finalUserId;
               }
@@ -152,6 +155,7 @@ export const authOptions: NextAuthOptions = {
         (session.user as any).tenantId = token.tenantId;
         (session.user as any).tenantName = token.tenantName;
         (session.user as any).plan = token.plan;
+        (session.user as any).allowedMenus = token.allowedMenus;
         (session as any).backendToken = token.backendToken;
         (session as any).accessToken = token.accessToken;
       }
