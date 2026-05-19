@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { signIn, signOut, useSession } from "next-auth/react";
+import { signIn, signOut, useSession, getSession } from "next-auth/react";
 import { useRouter } from "next/navigation";
 import { Eye, EyeOff, Loader2, Server, ShieldAlert, ArrowRight } from "lucide-react";
 import { ModeToggle } from "@/components/mode-toggle";
@@ -58,10 +58,9 @@ export default function BackofficeLoginPage() {
       setError(errorMessage);
       setLoading(false);
     } else {
-      // Fetch session immediately to check role
-      const sessionRes = await fetch("/api/auth/session");
-      const sessionData = await sessionRes.json();
-      const role = sessionData?.user?.role;
+      // Fetch session immediately to check role using getSession
+      const sessionData = await getSession();
+      const role = (sessionData?.user as any)?.role;
 
       if (role !== "SUPERADMIN" && role !== "STAFF") {
         await signOut({ redirect: false });

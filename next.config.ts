@@ -92,6 +92,10 @@ const nextConfig: NextConfig = {
         source: '/api/library/:path*',
         destination: `${backendUrl}/api/library/:path*`,
       },
+      {
+        source: '/api/public/:path*',
+        destination: `${backendUrl}/api/public/:path*`,
+      },
     ];
   },
   // experimental: {
