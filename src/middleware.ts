@@ -16,11 +16,18 @@ export default withAuth(
   {
     callbacks: {
       authorized: ({ req, token }) => {
-        // Protect /dashboard and /backoffice
         const path = req.nextUrl.pathname;
-        if (path.startsWith("/dashboard") || path.startsWith("/backoffice")) {
+        
+        // Protect /backoffice: Only allow SUPERADMIN and STAFF
+        if (path.startsWith("/backoffice")) {
+          return !!token && (token.role === "SUPERADMIN" || token.role === "STAFF");
+        }
+        
+        // Protect /dashboard: Allow any logged in user
+        if (path.startsWith("/dashboard")) {
           return !!token;
         }
+        
         return true;
       },
     },

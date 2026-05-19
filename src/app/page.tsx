@@ -246,9 +246,28 @@ const testimonials = [
 
 function BrandLogo({ size = "md" }: { size?: "sm" | "md" | "lg" }) {
   const boxSize = size === "lg" ? "h-28 w-28" : size === "sm" ? "h-20 w-20" : "h-24 w-24";
+  const [logo, setLogo] = useState("/logo-penagraha.png");
+
+  useEffect(() => {
+    async function getLogo() {
+      try {
+        const res = await fetch("/api/public/settings");
+        if (res.ok) {
+          const json = await res.json();
+          if (json.success && json.data?.logoUrl) {
+            setLogo(json.data.logoUrl);
+          }
+        }
+      } catch (err) {
+        console.error(err);
+      }
+    }
+    getLogo();
+  }, []);
+
   return (
-    <div className={`relative ${boxSize} shrink-0`}>
-      <img src="/logo-penagraha.png" alt="Penagraha" className="h-full w-full object-contain" />
+    <div className={`relative ${boxSize} shrink-0 flex items-center justify-center`}>
+      <img src={logo} alt="Penagraha" className="h-full w-full object-contain" />
     </div>
   );
 }

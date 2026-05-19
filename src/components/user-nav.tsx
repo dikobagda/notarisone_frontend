@@ -15,10 +15,10 @@ import {
 import { toast } from "sonner";
 
 const planConfig: Record<string, { label: string; color: string; bg: string; border: string; quota: number; used: number }> = {
-  TRIAL:        { label: "Free Trial",   color: "text-blue-600",    bg: "bg-blue-50",     border: "border-blue-200",    quota: 5,   used: 0.5 },
-  STARTER:      { label: "Starter",      color: "text-emerald-600", bg: "bg-emerald-50",  border: "border-emerald-200", quota: 5,   used: 1.2 },
-  PROFESSIONAL: { label: "Professional", color: "text-violet-600",  bg: "bg-violet-50",   border: "border-violet-200",  quota: 50,  used: 18.7 },
-  ENTERPRISE:   { label: "Enterprise",   color: "text-amber-600",   bg: "bg-amber-50",    border: "border-amber-200",   quota: 500, used: 120.4 },
+  TRIAL:        { label: "Trial",        color: "text-amber-700",    bg: "bg-amber-50",     border: "border-amber-200",    quota: 5,   used: 0.5 },
+  STARTER:      { label: "Starter",      color: "text-emerald-700",  bg: "bg-emerald-50",   border: "border-emerald-200", quota: 5,   used: 1.2 },
+  PROFESSIONAL: { label: "Professional", color: "text-blue-700",     bg: "bg-blue-50",      border: "border-blue-200",     quota: 50,  used: 18.7 },
+  ENTERPRISE:   { label: "Enterprise",   color: "text-purple-700",   bg: "bg-purple-50",    border: "border-purple-200",   quota: 500, used: 120.4 },
 };
 
 export function UserNav() {
@@ -43,8 +43,21 @@ export function UserNav() {
   const user = session.user;
   const userName = user.name || "Pengguna";
   const userEmail = user.email || "";
+  const role = (user as any)?.role;
+  const isAdmin = role === "SUPERADMIN" || role === "ADMIN";
   const plan = (user as any)?.plan || "STARTER";
   const cfg = planConfig[plan] || planConfig.STARTER;
+
+  let badgeLabel = cfg.label;
+  let badgeClasses = `${cfg.color} ${cfg.bg} ${cfg.border}`;
+
+  if (role === "SUPERADMIN") {
+    badgeLabel = "Super Admin";
+    badgeClasses = "text-red-700 bg-red-50 border-red-200";
+  } else if (role === "ADMIN") {
+    badgeLabel = "Admin";
+    badgeClasses = "text-slate-700 bg-slate-50 border-slate-200";
+  }
 
   const handleUpgrade = async () => {
     const nextTier =
@@ -92,15 +105,19 @@ export function UserNav() {
 
   return (
     <div ref={ref} className="relative">
-      {/* Avatar Button */}
+      {/* Avatar & Plan Badge Button */}
       <button
         onClick={() => setOpen((o) => !o)}
-        title={userName}
-        className={`h-8 w-8 rounded-xl flex items-center justify-center text-white font-bold text-sm shadow-sm transition-all cursor-pointer select-none ${
-          open ? "bg-indigo-700 ring-2 ring-indigo-300 ring-offset-1 shadow-lg shadow-indigo-300/50" : "bg-indigo-600 hover:bg-indigo-700 hover:shadow-lg hover:shadow-indigo-300/50"
-        }`}
+        className="flex items-center gap-2 px-2.5 py-1.5 rounded-xl border border-slate-100 hover:bg-slate-50/80 hover:shadow-sm transition-all cursor-pointer select-none group"
       >
-        {userName.charAt(0).toUpperCase()}
+        <span className={`text-[9px] font-black px-2 py-0.5 rounded-md uppercase tracking-widest border ${badgeClasses}`}>
+          {badgeLabel}
+        </span>
+        <div className={`h-8 w-8 rounded-lg flex items-center justify-center text-white font-bold text-sm shadow-sm transition-all ${
+          open ? "bg-indigo-700" : "bg-indigo-600 group-hover:bg-indigo-700"
+        }`}>
+          {userName.charAt(0).toUpperCase()}
+        </div>
       </button>
 
       {/* Dropdown Panel */}
@@ -120,13 +137,13 @@ export function UserNav() {
                 <p className="text-sm font-bold text-slate-800 truncate">{userName}</p>
                 <p className="text-xs text-slate-400 truncate">{userEmail}</p>
               </div>
-              <span className={`text-[10px] font-black px-2 py-1 rounded-lg uppercase tracking-widest border ${cfg.color} ${cfg.bg} ${cfg.border}`}>
-                {cfg.label}
+              <span className={`text-[10px] font-black px-2 py-1 rounded-lg uppercase tracking-widest border ${badgeClasses}`}>
+                {badgeLabel}
               </span>
             </div>
 
             {/* Upgrade CTA */}
-            {plan !== "ENTERPRISE" && (
+            {!isAdmin && plan !== "ENTERPRISE" && (
               <div className="px-4 py-3 border-b border-gray-100">
                 <button 
                   onClick={handleUpgrade}

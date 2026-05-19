@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { usePathname } from "next/navigation";
 import { useSession, signOut } from "next-auth/react";
 import Link from "next/link";
@@ -81,6 +81,24 @@ export function AppSidebar() {
   const { data: session } = useSession();
   const { collapsed, toggle } = useSidebar();
   const [expandedMenus, setExpandedMenus] = useState<string[]>([]);
+  const [logo, setLogo] = useState("/logo-penagraha.png");
+
+  useEffect(() => {
+    async function getLogo() {
+      try {
+        const res = await fetch("/api/public/settings");
+        if (res.ok) {
+          const json = await res.json();
+          if (json.success && json.data?.logoUrl) {
+            setLogo(json.data.logoUrl);
+          }
+        }
+      } catch (err) {
+        console.error(err);
+      }
+    }
+    getLogo();
+  }, []);
 
   const toggleExpand = (title: string, e: React.MouseEvent) => {
     if (collapsed) return;
@@ -92,7 +110,9 @@ export function AppSidebar() {
 
   const user = session?.user;
   const userName = user?.name || "Pengguna";
+  const role = (user as any)?.role;
   const plan = (user as any)?.plan || "STARTER";
+  const isAdmin = role === "SUPERADMIN" || role === "ADMIN";
 
   const planBadge: Record<string, string> = {
     TRIAL: "bg-blue-50 text-blue-600 border border-blue-200",
@@ -111,7 +131,7 @@ export function AppSidebar() {
       {/* ── Logo + Toggle ── */}
       <div className="px-3 flex items-center gap-2 border-b border-gray-200 h-20">
         <div className="relative h-16 w-16 shrink-0 flex items-center justify-center">
-          <img src="/logo-penagraha.png" alt="Penagraha" className="h-full w-full object-contain" />
+          <img src={logo} alt="Penagraha" className="h-full w-full object-contain" />
         </div>
 
         {!collapsed && (
@@ -243,12 +263,18 @@ export function AppSidebar() {
             </div>
             <div className="flex-1 min-w-0 overflow-hidden">
               <p className="text-slate-800 text-xs font-bold truncate leading-none mb-1">{userName}</p>
-              <span className={cn(
-                "text-[10px] font-black px-1.5 py-0.5 rounded-md uppercase tracking-widest",
-                planBadge[plan] || planBadge.STARTER
-              )}>
-                {plan === "TRIAL" ? "Free Trial" : plan}
-              </span>
+              {isAdmin ? (
+                <span className="text-[10px] font-black px-1.5 py-0.5 rounded-md uppercase tracking-widest bg-red-50 text-red-700 border border-red-200">
+                  {role === "SUPERADMIN" ? "Super Admin" : "Admin"}
+                </span>
+              ) : (
+                <span className={cn(
+                  "text-[10px] font-black px-1.5 py-0.5 rounded-md uppercase tracking-widest",
+                  planBadge[plan] || planBadge.STARTER
+                )}>
+                  {plan === "TRIAL" ? "Free Trial" : plan}
+                </span>
+              )}
             </div>
           </div>
         )}

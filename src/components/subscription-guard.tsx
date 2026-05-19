@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { useSession } from "next-auth/react";
+import { useSession, signOut } from "next-auth/react";
 import { usePathname, useRouter } from "next/navigation";
 import { getApiUrl } from "@/lib/api";
 
@@ -43,6 +43,20 @@ export function SubscriptionGuard() {
         
         const contentType = res.headers.get("content-type");
         if (!res.ok) {
+          if (res.status === 403) {
+            try {
+              const data = await res.json();
+              if (data.error === "Akses ditangguhkan" || data.message) {
+                console.warn("[Guard] Tenant is suspended. Forcing logout.");
+                await signOut({ 
+                  callbackUrl: `/auth/login?error=suspended&message=${encodeURIComponent(data.message || "Akses kantor Anda telah ditangguhkan oleh administrator platform.")}` 
+                });
+                return;
+              }
+            } catch (e) {
+              console.error("[Guard] Failed to parse 403 response:", e);
+            }
+          }
           if (res.status === 401) {
             console.error("[Guard] Session expired or invalid token. User might need to re-login.");
           } else {

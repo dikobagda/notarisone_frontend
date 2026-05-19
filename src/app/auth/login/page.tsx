@@ -1,26 +1,48 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, Suspense } from "react";
 import { signIn, useSession } from "next-auth/react";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import { Eye, EyeOff, Loader2, ShieldCheck, ArrowRight } from "lucide-react";
 import { ModeToggle } from "@/components/mode-toggle";
 
 export default function LoginPage() {
+  return (
+    <Suspense fallback={
+      <div className="min-h-screen w-full flex items-center justify-center bg-background">
+        <div className="flex flex-col items-center gap-4">
+          <Loader2 className="h-10 w-10 text-primary animate-spin" />
+          <p className="text-muted-foreground text-sm animate-pulse">Menyiapkan sesi Anda...</p>
+        </div>
+      </div>
+    }>
+      <LoginForm />
+    </Suspense>
+  );
+}
+
+function LoginForm() {
   const { status } = useSession();
   const router = useRouter();
+  const searchParams = useSearchParams();
+  const errorQuery = searchParams.get("error");
+  const messageQuery = searchParams.get("message");
+
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
 
-  // Auto-redirect if already logged in
+  // Auto-redirect if already logged in and handle suspension query param
   useEffect(() => {
     if (status === "authenticated") {
       router.replace("/dashboard");
     }
-  }, [status, router]);
+    if (errorQuery === "suspended") {
+      setError(messageQuery || "Akses kantor Anda telah ditangguhkan oleh administrator platform. Silakan hubungi support@penagraha.com.");
+    }
+  }, [status, router, errorQuery, messageQuery]);
 
   // Prevent showing form while checking session
   if (status === "loading" || status === "authenticated") {

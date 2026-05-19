@@ -23,6 +23,7 @@ export default function OnboardingWizard() {
   const [step, setStep] = useState(1);
   const [loading, setLoading] = useState(false);
   const [isSuccess, setIsSuccess] = useState(false);
+  const [error, setError] = useState("");
 
   // Form State
   const [formData, setFormData] = useState({
@@ -41,11 +42,25 @@ export default function OnboardingWizard() {
 
   const handleSubmit = async () => {
     setLoading(true);
-    // Simulate API Call
-    setTimeout(() => {
+    setError("");
+    try {
+      const res = await fetch("/api/backoffice/tenants", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(formData),
+      });
+
+      const data = await res.json();
+      if (res.ok && data.success) {
+        setIsSuccess(true);
+      } else {
+        setError(data.message || "Gagal memproses onboarding tenant baru.");
+      }
+    } catch (err) {
+      setError("Kesalahan koneksi saat menghubungi server onboarding.");
+    } finally {
       setLoading(false);
-      setIsSuccess(true);
-    }, 1500);
+    }
   };
 
   if (isSuccess) {
@@ -82,6 +97,16 @@ export default function OnboardingWizard() {
         <h1 className="text-4xl font-bold tracking-tight text-slate-900">Onboarding Tenant Baru</h1>
         <p className="text-slate-500 font-medium tracking-tight">Daftarkan kantor Notaris dan aktivasi lisensi perdana dalam hitungan menit.</p>
       </div>
+
+      {/* Error Alert */}
+      {error && (
+        <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-xl flex items-center gap-3 text-sm font-bold shadow-sm animate-in fade-in slide-in-from-top-2">
+          <svg className="h-5 w-5 shrink-0 text-red-500" fill="currentColor" viewBox="0 0 20 20">
+            <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clipRule="evenodd" />
+          </svg>
+          {error}
+        </div>
+      )}
 
       {/* Progress Stepper */}
       <div className="flex items-center justify-between px-8 relative">

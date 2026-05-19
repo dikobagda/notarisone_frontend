@@ -1,5 +1,6 @@
 "use client";
 
+import { useEffect, useState } from "react";
 import { usePathname } from "next/navigation";
 import { cn } from "@/lib/utils";
 import {
@@ -55,13 +56,31 @@ const adminItems = [
 
 export function BackofficeSidebar() {
   const pathname = usePathname();
+  const [logo, setLogo] = useState("/logo-penagraha.png");
+
+  useEffect(() => {
+    async function getLogo() {
+      try {
+        const res = await fetch("/api/public/settings");
+        if (res.ok) {
+          const json = await res.json();
+          if (json.success && json.data?.logoUrl) {
+            setLogo(json.data.logoUrl);
+          }
+        }
+      } catch (err) {
+        console.error(err);
+      }
+    }
+    getLogo();
+  }, []);
 
   return (
     <Sidebar collapsible="icon" className="border-r border-border bg-slate-900 text-white dark">
       <SidebarHeader className="p-4 bg-slate-950">
         <div className="flex items-center gap-3 px-3">
-          <div className="h-9 w-9 rounded-xl overflow-hidden shadow-lg shadow-indigo-500/20 bg-white">
-            <img src="/logo-penagraha.png" alt="Penagraha" className="h-full w-full object-contain" />
+          <div className="h-9 w-9 rounded-xl overflow-hidden shadow-lg shadow-indigo-500/20 bg-white flex items-center justify-center">
+            <img src={logo} alt="Penagraha" className="h-full w-full object-contain" />
           </div>
           <div className="flex flex-col">
             <span className="font-semibold text-lg tracking-tight">Penagraha</span>

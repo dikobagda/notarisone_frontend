@@ -32,6 +32,14 @@ import {
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogDescription,
+  DialogFooter,
+} from "@/components/ui/dialog";
 
 export default function PpatPage() {
   const { data: session } = useSession();
@@ -45,6 +53,9 @@ export default function PpatPage() {
   const [sortDir, setSortDir] = useState<'asc' | 'desc'>('desc');
   const [page, setPage] = useState(1);
   const PAGE_SIZE = 10;
+  const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
+  const [deedToDelete, setDeedToDelete] = useState<any>(null);
+  const [isDeleting, setIsDeleting] = useState(false);
 
   const DEED_TYPE_LABELS: Record<string, string> = {
     AJB: "Akta Jual Beli",
@@ -106,6 +117,31 @@ export default function PpatPage() {
   useEffect(() => {
     fetchDeeds();
   }, [session]);
+
+  const handleDeleteDeed = async () => {
+    if (!deedToDelete) return;
+    setIsDeleting(true);
+    try {
+      const tenantId = (session?.user as any)?.tenantId;
+      const response = await fetch(`/api/deeds/${deedToDelete.id}?tenantId=${tenantId}`, {
+        method: "DELETE",
+        headers: { 'Authorization': `Bearer ${(session as any)?.backendToken}` }
+      });
+      const result = await response.json();
+      if (result.success) {
+        setDeeds(deeds.filter(d => d.id !== deedToDelete.id));
+        setIsDeleteModalOpen(false);
+        setDeedToDelete(null);
+      } else {
+        alert(result.message || "Gagal menghapus akta");
+      }
+    } catch (error) {
+      console.error("Delete deed error:", error);
+      alert("Terjadi kesalahan sistem saat menghapus akta");
+    } finally {
+      setIsDeleting(false);
+    }
+  };
 
   const PPAT_TYPES = [
     // Current values (used by create/edit pages)
@@ -420,7 +456,10 @@ export default function PpatPage() {
                           <FolderOpen className="h-4 w-4 text-slate-400" /> Kelola Dokumen
                         </Link>
                         <div className="h-px bg-slate-100 my-1 mx-2" />
-                        <button className="w-full flex items-center gap-3 px-3 py-2.5 text-xs font-bold text-red-500 hover:bg-red-50 hover:text-red-600 rounded-xl transition-colors text-left cursor-pointer">
+                        <button
+                          onClick={() => { setDeedToDelete(deed); setIsDeleteModalOpen(true); setActiveMenuId(null); }}
+                          className="w-full flex items-center gap-3 px-3 py-2.5 text-xs font-bold text-red-500 hover:bg-red-50 hover:text-red-600 rounded-xl transition-colors text-left cursor-pointer"
+                        >
                           <Trash2 className="h-4 w-4" /> Hapus Data
                         </button>
                       </div>
@@ -470,6 +509,55 @@ export default function PpatPage() {
           </div>
         )}
       </div>
+
+      {/* Custom Delete Confirmation Modal */}
+      <Dialog open={isDeleteModalOpen} onOpenChange={setIsDeleteModalOpen}>
+        <DialogContent className="sm:max-w-md rounded-3xl overflow-hidden border-0 shadow-2xl p-0">
+          <div className="bg-gradient-to-br from-red-500 to-rose-600 p-6 text-white text-center relative overflow-hidden">
+            <div className="absolute -top-10 -right-10 w-32 h-32 bg-white/10 rounded-full blur-2xl pointer-events-none" />
+            <div className="absolute -bottom-10 -left-10 w-24 h-24 bg-white/5 rounded-full blur-xl pointer-events-none" />
+            <div className="h-14 w-14 rounded-2xl bg-white/20 border border-white/30 flex items-center justify-center mx-auto mb-4 backdrop-blur-sm shadow-inner">
+              <Trash2 className="h-7 w-7 text-white" />
+            </div>
+            <DialogTitle className="text-lg font-black text-white">Hapus Akta PPAT</DialogTitle>
+            <DialogDescription className="text-red-100 mt-2 font-medium text-xs">
+              Tindakan ini tidak dapat dibatalkan. Data akta PPAT akan dihapus secara permanen dari sistem.
+            </DialogDescription>
+          </div>
+          <div className="p-6 space-y-4">
+            <div className="rounded-2xl border border-slate-100 bg-slate-50/50 p-4">
+              <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Judul Akta</p>
+              <p className="font-bold text-slate-800 text-sm mt-1">{deedToDelete?.title}</p>
+              <p className="text-[9px] font-black text-slate-400 uppercase tracking-widest mt-3">Klien Pemohon</p>
+              <p className="font-bold text-slate-800 text-xs mt-1">{deedToDelete?.client?.name || "N/A"}</p>
+              <p className="text-[9px] font-black text-slate-400 uppercase tracking-widest mt-3">Nomor Objek Pajak (NOP)</p>
+              <p className="font-bold text-slate-800 text-xs mt-1">{deedToDelete?.ppatData?.nop || "—"}</p>
+            </div>
+            
+            <div className="flex gap-2">
+              <Button
+                variant="outline"
+                className="flex-1 rounded-xl font-bold border-slate-200 text-slate-600 hover:bg-slate-50 h-10 cursor-pointer"
+                onClick={() => { setIsDeleteModalOpen(false); setDeedToDelete(null); }}
+                disabled={isDeleting}
+              >
+                Batal
+              </Button>
+              <Button
+                className="flex-1 rounded-xl font-bold bg-red-600 hover:bg-red-500 text-white shadow-lg shadow-red-500/20 border-0 h-10 gap-1.5 cursor-pointer"
+                onClick={handleDeleteDeed}
+                disabled={isDeleting}
+              >
+                {isDeleting ? (
+                  <><Loader2 className="h-4 w-4 animate-spin" />Menghapus...</>
+                ) : (
+                  "Hapus Sekarang"
+                )}
+              </Button>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
