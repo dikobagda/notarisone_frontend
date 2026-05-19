@@ -144,7 +144,12 @@ export default function DocumentCenterPage() {
     // If scanning, show finalization dialog
     if (type === 'scan' && deed.status !== 'FINAL') {
       setPendingScanFile(file);
-      await fetchNextNumber();
+      if (deed.deedNumber) {
+        setSuggestedNumber(deed.deedNumber);
+        setManualNumber(deed.deedNumber);
+      } else {
+        await fetchNextNumber();
+      }
       setIsFinalizeDialogOpen(true);
       return;
     }
@@ -817,7 +822,7 @@ export default function DocumentCenterPage() {
                     id="deedNumber" 
                     value={manualNumber} 
                     onChange={(e) => setManualNumber(e.target.value)}
-                    placeholder="000/Tahun/Bulan"
+                    placeholder="Masukkan nomor akta"
                     className="h-13 pl-10 rounded-xl border-slate-200 font-bold text-slate-900 text-lg focus:ring-emerald-500 focus:border-emerald-500 transition-all shadow-none placeholder:font-normal placeholder:text-slate-300"
                   />
                 </div>

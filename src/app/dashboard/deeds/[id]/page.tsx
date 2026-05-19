@@ -39,6 +39,15 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Button, buttonVariants } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { 
+  Dialog, 
+  DialogContent, 
+  DialogHeader, 
+  DialogTitle, 
+  DialogDescription, 
+  DialogFooter 
+} from "@/components/ui/dialog";
 
 export default function DeedDetailPage() {
   const { id } = useParams();
@@ -49,6 +58,11 @@ export default function DeedDetailPage() {
   const [isPreviewing, setIsPreviewing] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [auditLogs, setAuditLogs] = useState<any[]>([]);
+  const [isNumberDialogOpen, setIsNumberDialogOpen] = useState(false);
+  const [inputDeedNumber, setInputDeedNumber] = useState("");
+  const [isSavingNumber, setIsSavingNumber] = useState(false);
+  const [numberError, setNumberError] = useState<string | null>(null);
+  const [suggestedNumber, setSuggestedNumber] = useState("");
   
   const [allClients, setAllClients] = useState<any[]>([]);
   const [isPartyClientDropdownOpen, setIsPartyClientDropdownOpen] = useState(false);
@@ -212,6 +226,62 @@ export default function DeedDetailPage() {
     fetchClients();
   }, [id, session]);
 
+  const handleOpenNumberDialog = async () => {
+    setInputDeedNumber("");
+    setNumberError(null);
+    setIsNumberDialogOpen(true);
+    
+    const tenantId = (session?.user as any)?.tenantId;
+    if (!tenantId) return;
+    try {
+      const res = await fetch(`/api/deeds/next-number?tenantId=${tenantId}`, {
+        headers: { 'Authorization': `Bearer ${(session as any)?.backendToken}` }
+      });
+      const result = await res.json();
+      if (result.success && result.data?.suggestedNumber) {
+        setSuggestedNumber(result.data.suggestedNumber);
+      }
+    } catch (err) {
+      console.error("Error fetching suggested number:", err);
+    }
+  };
+
+  const handleSaveDeedNumber = async () => {
+    if (!inputDeedNumber.trim()) {
+      setNumberError("Nomor akta wajib diisi");
+      return;
+    }
+
+    const tenantId = (session?.user as any)?.tenantId;
+    if (!tenantId || !id) return;
+
+    setIsSavingNumber(true);
+    setNumberError(null);
+
+    try {
+      const updateRes = await fetch(`/api/deeds/${id}?tenantId=${tenantId}`, {
+        method: "PATCH",
+        headers: {
+          "Content-Type": "application/json",
+          'Authorization': `Bearer ${(session as any)?.backendToken}`
+        },
+        body: JSON.stringify({ deedNumber: inputDeedNumber.trim() })
+      });
+      
+      const updateResult = await updateRes.json();
+      if (updateResult.success) {
+        setIsNumberDialogOpen(false);
+        await fetchDeed();
+      } else {
+        setNumberError(updateResult.message || "Gagal menyimpan nomor akta");
+      }
+    } catch (err) {
+      setNumberError("Terjadi kesalahan koneksi saat menyimpan nomor akta");
+    } finally {
+      setIsSavingNumber(false);
+    }
+  };
+
   const filteredPartyClients = partyClientSearch
     ? allClients.filter(
         (c) =>
@@ -319,6 +389,15 @@ export default function DeedDetailPage() {
             </div>
           </div>
           <div className="flex gap-2 shrink-0">
+            {!deed.deedNumber && deed.status !== 'FINAL' && (
+              <Button 
+                onClick={handleOpenNumberDialog}
+                className="rounded-xl font-bold bg-indigo-600 hover:bg-indigo-700 text-white h-10 cursor-pointer shadow-lg shadow-indigo-600/20"
+              >
+                <Hash className="h-4 w-4 mr-1.5" />
+                Input Nomor Akta
+              </Button>
+            )}
             <Link href={`/dashboard/deeds/${id}/edit`}>
               <Button variant="outline" className="rounded-xl font-bold border-white/20 bg-white/10 text-white hover:bg-white/20 h-10 cursor-pointer backdrop-blur-sm">
                 <Pencil className="h-4 w-4 mr-1.5" /> Edit Metadata
@@ -878,6 +957,74 @@ export default function DeedDetailPage() {
           </div>
         </div>
       </div>
+
+      {/* Dialog Input Nomor Akta */}
+      <Dialog open={isNumberDialogOpen} onOpenChange={setIsNumberDialogOpen}>
+        <DialogContent className="sm:max-w-[480px] rounded-3xl border-0 p-0 overflow-hidden shadow-2xl">
+          <div className="h-1.5 bg-indigo-600 w-full" />
+          <div className="p-8 pt-6">
+            <DialogHeader className="mb-6">
+              <div className="h-12 w-12 rounded-2xl bg-indigo-50 border border-indigo-100 flex items-center justify-center text-indigo-600 mb-3 shadow-sm">
+                <Hash className="h-6 w-6" />
+              </div>
+              <DialogTitle className="text-xl font-extrabold text-slate-900 tracking-tight">Input Nomor Akta</DialogTitle>
+              <DialogDescription className="font-medium text-slate-500 leading-relaxed text-sm mt-1.5">
+                Masukkan Nomor Akta resmi untuk pencatatan dan penomoran.
+              </DialogDescription>
+            </DialogHeader>
+            
+            <div className="space-y-5 py-2">
+              <div className="space-y-2">
+                <Label htmlFor="inputDeedNumber" className="text-xs font-bold uppercase tracking-wider text-slate-400 ml-0.5">Nomor Akta Resmi <span className="text-red-500">*</span></Label>
+                <div className="relative">
+                  <span className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-300 font-bold">#</span>
+                  <Input 
+                    id="inputDeedNumber" 
+                    value={inputDeedNumber} 
+                    onChange={(e) => setInputDeedNumber(e.target.value)}
+                    placeholder="Masukkan nomor akta"
+                    className="h-13 pl-10 rounded-xl border-slate-200 font-bold text-slate-900 text-lg focus:ring-indigo-500 focus:border-indigo-500 transition-all shadow-none placeholder:font-normal placeholder:text-slate-300"
+                  />
+                </div>
+                {suggestedNumber && (
+                  <button 
+                    type="button"
+                    onClick={() => setInputDeedNumber(suggestedNumber)}
+                    className="text-[10px] text-slate-400 font-medium px-1 flex items-center gap-1.5 justify-end mt-1 hover:text-indigo-600 transition-colors ml-auto"
+                  >
+                     Saran sistem: <span className="text-indigo-600 bg-indigo-50 px-2 py-0.5 rounded border border-indigo-100 font-mono text-[10px]">{suggestedNumber}</span>
+                  </button>
+                )}
+              </div>
+
+              {numberError && (
+                <div className="p-4 rounded-xl bg-red-50 border border-red-100 flex gap-3 text-red-700">
+                  <AlertCircle className="h-5 w-5 shrink-0" />
+                  <p className="text-xs font-semibold">{numberError}</p>
+                </div>
+              )}
+            </div>
+            
+            <DialogFooter className="mt-6 gap-3 sm:flex-row-reverse sm:justify-start">
+              <Button 
+                onClick={handleSaveDeedNumber} 
+                disabled={isSavingNumber || !inputDeedNumber.trim()}
+                className="flex-1 bg-indigo-600 hover:bg-indigo-700 text-white font-bold h-12 rounded-xl shadow-lg shadow-indigo-200 border-0 text-sm transition-all"
+              >
+                {isSavingNumber ? <><Loader2 className="h-4 w-4 mr-2 animate-spin" /> Memproses...</> : "Simpan Nomor Akta"}
+              </Button>
+              <Button 
+                variant="ghost" 
+                onClick={() => setIsNumberDialogOpen(false)} 
+                disabled={isSavingNumber} 
+                className="font-bold text-slate-400 h-12 px-6 rounded-xl hover:bg-slate-50 transition-colors"
+              >
+                Batal
+              </Button>
+            </DialogFooter>
+          </div>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
