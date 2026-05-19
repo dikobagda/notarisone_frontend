@@ -445,7 +445,7 @@ export default function KeuanganDashboard() {
                                     className="rounded-xl font-bold text-xs gap-3 p-3 cursor-pointer text-emerald-600 hover:text-emerald-700"
                                     onClick={() => setSelectedInvoice(inv)}
                                   >
-                                    <DollarSign className="h-4 w-4" /> Catat Bayar
+                                    <DollarSign className="h-4 w-4" /> Bayar Bertahap
                                   </DropdownMenuItem>
                                 )}
                                 <DropdownMenuSeparator />

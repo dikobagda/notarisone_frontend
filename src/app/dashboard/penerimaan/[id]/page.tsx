@@ -23,11 +23,13 @@ import {
   ChevronRight,
   Eye,
   ExternalLink,
-  Loader2
+  Loader2,
+  Upload
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import Link from "next/link";
+import { CustomSelect } from "@/components/ui/custom-select";
 import { jsPDF } from "jspdf";
 import { 
   Dialog, 
@@ -50,6 +52,17 @@ export default function ConsultationDetailPage({ params }: { params: Promise<{ i
   const [bankName, setBankName] = useState("");
   const [accountNumber, setAccountNumber] = useState("");
   const [accountHolder, setAccountHolder] = useState("");
+  const [uploadingHandover, setUploadingHandover] = useState<string | null>(null);
+
+  const notaryHandoverOptions = [
+    { label: "Belum Diterima", value: "PENDING", icon: Clock, description: "Dokumen belum diserahterimakan" },
+    { label: "Sudah Diterima", value: "RECEIVED", icon: CheckCircle, description: "Dokumen telah diverifikasi & diterima" }
+  ];
+
+  const clientHandoverOptions = [
+    { label: "Belum Diterima", value: "PENDING", icon: Clock, description: "Dokumen belum dikembalikan" },
+    { label: "Sudah Diterima", value: "RECEIVED", icon: CheckCircle, description: "Dokumen telah dikembalikan ke klien" }
+  ];
 
   const fetchDetail = async () => {
     try {
@@ -264,6 +277,279 @@ export default function ConsultationDetailPage({ params }: { params: Promise<{ i
     doc.text("Sistem Manajemen Notaris & PPAT", 140, footerY + 49);
 
     doc.save(`Invoice-${consultation.id.slice(0, 8)}.pdf`);
+  };
+
+  const handleUpdateHandoverStatus = async (type: 'CLIENT_TO_NOTARY' | 'NOTARY_TO_CLIENT', status: string, date: string | null = null, proof: string | null = null) => {
+    try {
+      const url = getApiUrl(`/api/service-requests/${id}/handover`);
+      const response = await fetch(url, {
+        method: 'PATCH',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${(session as any)?.backendToken}`
+        },
+        body: JSON.stringify({
+          type,
+          status,
+          date: date || (status === 'RECEIVED' ? new Date().toISOString() : null),
+          proof
+        })
+      });
+      const result = await response.json();
+      if (result.success) {
+        setConsultation(result.data);
+      } else {
+        alert("Gagal memperbarui status serah terima: " + result.message);
+      }
+    } catch (error) {
+      console.error("Error updating handover status:", error);
+      alert("Error memperbarui status serah terima");
+    }
+  };
+
+  const handleUploadHandoverProof = async (type: 'CLIENT_TO_NOTARY' | 'NOTARY_TO_CLIENT', file: File) => {
+    setUploadingHandover(type === 'CLIENT_TO_NOTARY' ? 'toNotary' : 'toClient');
+    try {
+      const formData = new FormData();
+      formData.append('file', file);
+
+      const uploadUrl = getApiUrl('/api/service-requests/upload');
+      const response = await fetch(uploadUrl, {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${(session as any)?.backendToken}`
+        },
+        body: formData
+      });
+      const result = await response.json();
+      if (result.success) {
+        const isNotary = type === 'CLIENT_TO_NOTARY';
+        const currentStatus = isNotary ? consultation.toNotaryStatus : consultation.toClientStatus;
+        const currentDate = isNotary ? consultation.toNotaryDate : consultation.toClientDate;
+        
+        await handleUpdateHandoverStatus(
+          type,
+          currentStatus === 'RECEIVED' ? 'RECEIVED' : 'RECEIVED',
+          currentDate || new Date().toISOString(),
+          result.data.url
+        );
+      } else {
+        alert("Gagal mengunggah bukti: " + result.message);
+      }
+    } catch (error) {
+      console.error("Error uploading handover proof:", error);
+      alert("Error mengunggah file bukti");
+    } finally {
+      setUploadingHandover(null);
+    }
+  };
+
+  const handleDownloadHandoverPdf = (type: 'CLIENT_TO_NOTARY' | 'NOTARY_TO_CLIENT') => {
+    if (!consultation) return;
+
+    const doc = new jsPDF();
+    const isClientToNotary = type === 'CLIENT_TO_NOTARY';
+    
+    // Colors
+    const darkBg = "#0F172A"; // Dark Slate
+    const redAccent = "#EF4444"; // Red
+    const white = "#FFFFFF";
+    const textDark = "#1E293B";
+    const textLight = "#64748B";
+    const tableHeaderBg = "#F1F5F9";
+
+    // 1. Header (Dark Background)
+    doc.setFillColor(darkBg);
+    doc.rect(0, 0, 210, 50, "F");
+
+    // Red accent at top left
+    doc.setFillColor(redAccent);
+    doc.rect(15, 0, 20, 10, "F");
+
+    // Title
+    doc.setFont("helvetica", "bold");
+    doc.setFontSize(14);
+    doc.setTextColor(white);
+    
+    const titleText = isClientToNotary 
+      ? "TANDA TERIMA PENYERAHAN DOKUMEN" 
+      : "TANDA TERIMA PENGEMBALIAN DOKUMEN";
+    const titleLines = doc.splitTextToSize(titleText, 115);
+    doc.text(titleLines, 15, 20);
+    
+    doc.setFontSize(8.5);
+    doc.setFont("helvetica", "normal");
+    doc.setTextColor("#94A3B8");
+    const subtitleText = isClientToNotary
+      ? "Tanda terima berkas dari Klien kepada Kantor Notaris & PPAT"
+      : "Tanda terima pengembalian berkas dari Kantor Notaris & PPAT kepada Klien";
+    const subtitleLines = doc.splitTextToSize(subtitleText, 115);
+    doc.text(subtitleLines, 15, 32);
+
+    // Sub-info (No. Serah Terima, Tanggal)
+    doc.setFontSize(8);
+    doc.setTextColor("#94A3B8");
+    doc.text("ID Konsultansi", 15, 41);
+    doc.text("Tanggal Serah Terima", 70, 41);
+
+    doc.setFont("helvetica", "bold");
+    doc.setTextColor(white);
+    doc.text(consultation.id.slice(0, 12).toUpperCase(), 15, 46);
+    
+    const handoverDate = isClientToNotary ? consultation.toNotaryDate : consultation.toClientDate;
+    const dateStr = handoverDate 
+      ? new Date(handoverDate).toLocaleDateString('id-ID', { day: 'numeric', month: 'long', year: 'numeric', hour: '2-digit', minute: '2-digit' })
+      : new Date().toLocaleDateString('id-ID', { day: 'numeric', month: 'long', year: 'numeric' });
+    doc.text(dateStr, 70, 46);
+
+    // Client Info (Right aligned)
+    doc.setFont("helvetica", "normal");
+    doc.setFontSize(8);
+    doc.setTextColor("#94A3B8");
+    doc.text("Klien / Pemohon:", 140, 18);
+
+    doc.setFont("helvetica", "bold");
+    doc.setFontSize(11);
+    doc.setTextColor(white);
+    doc.text(consultation.clientName || consultation.client?.name || "Klien Anonim", 140, 23);
+
+    doc.setFont("helvetica", "normal");
+    doc.setFontSize(8);
+    doc.setTextColor("#94A3B8");
+    doc.text(`NIK: ${consultation.client?.nik || "-"}`, 140, 28);
+    doc.text(`Telp: ${consultation.clientPhone || consultation.client?.phone || "-"}`, 140, 33);
+    
+    const address = consultation.client?.address || "Alamat tidak tersedia";
+    const addressLines = doc.splitTextToSize(address, 60);
+    doc.text(addressLines, 140, 38);
+
+    // 2. Body Info Text
+    let currentY = 62;
+    doc.setFont("helvetica", "bold");
+    doc.setFontSize(10);
+    doc.setTextColor(textDark);
+    doc.text("PERNYATAAN SERAH TERIMA", 15, currentY);
+    
+    currentY += 6;
+    doc.setFont("helvetica", "normal");
+    doc.setFontSize(9.5);
+    doc.setTextColor(textDark);
+    
+    const statement = isClientToNotary
+      ? `Pada hari ini, telah dilakukan penyerahan berkas/dokumen persyaratan dari Klien kepada Kantor Notaris & PPAT untuk keperluan layanan hukum "${consultation.serviceCategory?.replace(/_/g, ' ')}" dengan rincian dokumen sebagai berikut:`
+      : `Pada hari ini, telah dilakukan pengembalian berkas/dokumen asli/salinan dari Kantor Notaris & PPAT kepada Klien selaku pemilik dokumen yang sah untuk layanan hukum "${consultation.serviceCategory?.replace(/_/g, ' ')}" dengan rincian dokumen sebagai berikut:`;
+    
+    const statementLines = doc.splitTextToSize(statement, 180);
+    doc.text(statementLines, 15, currentY);
+    currentY += (statementLines.length * 5) + 4;
+
+    // 3. Document Table
+    doc.setFillColor(tableHeaderBg);
+    doc.rect(15, currentY, 180, 8, "F");
+    
+    doc.setFont("helvetica", "bold");
+    doc.setFontSize(9);
+    doc.setTextColor(textDark);
+    doc.text("NO.", 18, currentY + 5.5);
+    doc.text("NAMA DOKUMEN / PERSYARATAN", 30, currentY + 5.5);
+    doc.text("STATUS VERIFIKASI", 120, currentY + 5.5);
+    doc.text("KETERANGAN", 160, currentY + 5.5);
+
+    doc.setDrawColor("#E2E8F0");
+    doc.line(15, currentY + 8, 195, currentY + 8);
+    currentY += 8;
+
+    const checkedDocs = Object.entries(consultation.documents || {})
+      .filter(([key, val]: [string, any]) => {
+        if (key === 'Sertifikat' || key === 'PBB') {
+          return consultation.serviceCategory === 'PPAT';
+        }
+        return true;
+      });
+
+    doc.setFont("helvetica", "normal");
+    doc.setFontSize(9);
+    
+    if (checkedDocs.length === 0) {
+      currentY += 8;
+      doc.text("Tidak ada dokumen yang dicatat.", 18, currentY);
+      doc.line(15, currentY + 4, 195, currentY + 4);
+      currentY += 4;
+    } else {
+      checkedDocs.forEach(([key, val]: [string, any], index) => {
+        currentY += 8;
+        doc.text(`${index + 1}`, 18, currentY);
+        doc.text(key, 30, currentY);
+        
+        doc.setFont("helvetica", "bold");
+        if (val.checked) {
+          doc.setTextColor("#10B981"); // Emerald green
+          doc.text("DITERIMA", 120, currentY);
+        } else {
+          doc.setTextColor("#94A3B8"); // Slate grey
+          doc.text("BELUM ADA", 120, currentY);
+        }
+        doc.setFont("helvetica", "normal");
+        doc.setTextColor(textDark);
+        
+        doc.text(val.checked ? "Asli/Copy diverifikasi" : "-", 160, currentY);
+        
+        doc.line(15, currentY + 4, 195, currentY + 4);
+        currentY += 4;
+      });
+    }
+
+    currentY += 12;
+
+    // 4. Notes
+    doc.setFont("helvetica", "bold");
+    doc.setFontSize(9);
+    doc.text("Catatan Penting:", 15, currentY);
+    
+    doc.setFont("helvetica", "normal");
+    doc.setFontSize(8);
+    doc.setTextColor(textLight);
+    const notesStr = isClientToNotary
+      ? "1. Dokumen yang diterima akan disimpan dengan aman di Kantor Notaris & PPAT.\n2. Tanda terima ini sah secara elektronik dan dapat dicetak sebagai bukti serah terima berkas yang valid.\n3. Harap simpan tanda terima ini untuk keperluan pelacakan berkas."
+      : "1. Dokumen yang dikembalikan telah diperiksa keutuhannya bersama oleh kedua belah pihak.\n2. Tanggung jawab penyimpanan dokumen sepenuhnya beralih kembali kepada Klien setelah penandatanganan tanda terima ini.\n3. Tanda terima ini menjadi bukti mutlak bahwa dokumen telah diserahterimakan kembali.";
+    doc.text(notesStr, 15, currentY + 5);
+
+    currentY += 25;
+
+    // 5. Signature Section
+    doc.setFont("helvetica", "normal");
+    doc.setFontSize(9);
+    doc.setTextColor(textDark);
+    
+    const signatureY = currentY;
+    
+    // Left signature: Client
+    doc.text("Yang Menyerahkan,", 25, signatureY);
+    doc.line(25, signatureY + 20, 75, signatureY + 20);
+    doc.setFont("helvetica", "bold");
+    const senderName = isClientToNotary 
+      ? (consultation.clientName || consultation.client?.name || "Klien / Customer") 
+      : (consultation.tenantName || "Kantor Notaris & PPAT");
+    doc.text(senderName, 25, signatureY + 24);
+    
+    // Right signature: Notary
+    doc.setFont("helvetica", "normal");
+    doc.text("Yang Menerima,", 130, signatureY);
+    doc.line(130, signatureY + 20, 180, signatureY + 20);
+    doc.setFont("helvetica", "bold");
+    const receiverName = isClientToNotary 
+      ? (consultation.tenantName || "Kantor Notaris & PPAT")
+      : (consultation.clientName || consultation.client?.name || "Klien / Customer");
+    doc.text(receiverName, 130, signatureY + 24);
+
+    // Elegant Footer
+    doc.setFont("helvetica", "normal");
+    doc.setFontSize(7);
+    doc.setTextColor(textLight);
+    doc.text("PENAGRAHA - Sistem Informasi Manajemen Notaris & PPAT Terintegrasi", 15, 285);
+    
+    const docName = isClientToNotary ? "Serah-Terima-Masuk" : "Serah-Terima-Keluar";
+    doc.save(`${docName}-${consultation.id.slice(0, 8)}.pdf`);
   };
 
   useEffect(() => {
@@ -483,6 +769,231 @@ export default function ConsultationDetailPage({ params }: { params: Promise<{ i
                   </div>
                 </div>
               ))}
+            </div>
+          </section>
+
+          {/* Section: Serah Terima Dokumen */}
+          <section className="bg-white p-8 rounded-3xl border border-slate-200 shadow-sm space-y-8">
+            <div className="flex items-center gap-4 border-b border-slate-100 pb-6">
+              <div className="h-12 w-12 rounded-2xl bg-indigo-50 text-indigo-600 flex items-center justify-center">
+                <Printer className="h-6 w-6" />
+              </div>
+              <div>
+                <h2 className="text-xl font-black text-slate-900 tracking-tight uppercase">Serah Terima Dokumen</h2>
+                <p className="text-xs font-semibold text-slate-400 uppercase tracking-widest mt-0.5">Kelola & Cetak Tanda Terima Berkas</p>
+              </div>
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              {/* Card 1: Client to Notary */}
+              <div className="p-6 rounded-[2rem] border border-slate-150 bg-slate-50/40 hover:bg-white hover:border-slate-300 hover:shadow-xl hover:shadow-slate-500/5 transition-all flex flex-col gap-6">
+                <div className="flex items-start justify-between gap-4">
+                  <div className="space-y-1">
+                    <span className="text-[10px] font-black text-indigo-600 uppercase tracking-[0.15em]">Tipe A</span>
+                    <h3 className="font-black text-slate-800 text-md tracking-tight leading-tight">Penyerahan: Klien → Notaris</h3>
+                    <p className="text-xs text-slate-400 font-medium">Dokumen dari klien diserahkan ke notaris</p>
+                  </div>
+                  <Badge className={`px-3 py-1 rounded-full font-bold text-[10px] tracking-wide border ${
+                    consultation.toNotaryStatus === 'RECEIVED' 
+                      ? 'bg-emerald-50 text-emerald-600 border-emerald-200' 
+                      : 'bg-amber-50 text-amber-600 border-amber-200'
+                  }`}>
+                    {consultation.toNotaryStatus === 'RECEIVED' ? 'Diterima Notaris' : 'Menunggu'}
+                  </Badge>
+                </div>
+
+                <div className="space-y-4 pt-4 border-t border-slate-100">
+                  <div className="w-full">
+                    <CustomSelect
+                      label="Status Terima"
+                      options={notaryHandoverOptions}
+                      value={consultation.toNotaryStatus || 'PENDING'}
+                      onChange={(val) => handleUpdateHandoverStatus('CLIENT_TO_NOTARY', val)}
+                    />
+                  </div>
+
+                  {consultation.toNotaryStatus === 'RECEIVED' && (
+                    <div className="text-xs space-y-1 text-slate-500 font-medium bg-slate-100/60 p-3 rounded-xl">
+                      <p>Tanggal Diterima:</p>
+                      <p className="font-bold text-slate-700">
+                        {consultation.toNotaryDate 
+                          ? new Date(consultation.toNotaryDate).toLocaleDateString('id-ID', { day: 'numeric', month: 'long', year: 'numeric', hour: '2-digit', minute: '2-digit' })
+                          : '-'}
+                      </p>
+                    </div>
+                  )}
+
+                  {/* Proof Upload / Display */}
+                  <div className="space-y-2">
+                    <span className="text-[10px] font-black text-slate-400 uppercase tracking-wider">Bukti Serah Terima</span>
+                    {consultation.toNotaryProof ? (
+                      <div className="flex items-center justify-between p-3 rounded-2xl bg-emerald-50/50 border border-emerald-200 text-emerald-800">
+                        <div className="flex items-center gap-2 min-w-0">
+                          <CheckCircle className="h-4 w-4 text-emerald-600 shrink-0" />
+                          <span className="text-xs font-bold truncate">File Bukti Terunggah</span>
+                        </div>
+                        <div className="flex items-center gap-1 shrink-0">
+                          <Button 
+                            variant="ghost" 
+                            size="sm" 
+                            onClick={() => handlePreview(consultation.toNotaryProof)}
+                            className="h-8 px-2 rounded-xl text-xs font-bold text-emerald-600 hover:text-emerald-700 hover:bg-emerald-100/50"
+                          >
+                            <Eye className="h-3.5 w-3.5" />
+                          </Button>
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => handleUpdateHandoverStatus('CLIENT_TO_NOTARY', 'RECEIVED', consultation.toNotaryDate, null)}
+                            className="h-8 px-2 rounded-xl text-xs font-bold text-red-500 hover:text-red-600 hover:bg-red-50"
+                          >
+                            Hapus
+                          </Button>
+                        </div>
+                      </div>
+                    ) : (
+                      <div className="relative">
+                        <input
+                          type="file"
+                          id="upload-to-notary"
+                          className="hidden"
+                          accept="image/*,application/pdf"
+                          onChange={(e) => {
+                            const file = e.target.files?.[0];
+                            if (file) handleUploadHandoverProof('CLIENT_TO_NOTARY', file);
+                          }}
+                          disabled={uploadingHandover !== null}
+                        />
+                        <label
+                          htmlFor="upload-to-notary"
+                          className="flex flex-col items-center justify-center p-4 border border-dashed border-slate-200 rounded-2xl cursor-pointer hover:bg-slate-100/50 transition-colors"
+                        >
+                          {uploadingHandover === 'toNotary' ? (
+                            <Loader2 className="h-5 w-5 text-indigo-500 animate-spin" />
+                          ) : (
+                            <>
+                              <Upload className="h-4 w-4 text-slate-400 mb-1" />
+                              <span className="text-[10px] font-bold text-slate-500 uppercase tracking-wider">Unggah Bukti (PDF/Gambar)</span>
+                            </>
+                          )}
+                        </label>
+                      </div>
+                    )}
+                  </div>
+                </div>
+
+                <Button 
+                  onClick={() => handleDownloadHandoverPdf('CLIENT_TO_NOTARY')}
+                  className="w-full h-11 mt-auto rounded-2xl bg-indigo-600 hover:bg-indigo-700 text-white font-bold text-xs gap-2 shadow-lg shadow-indigo-600/10 transition-all cursor-pointer"
+                >
+                  <Printer className="h-4 w-4" /> Cetak Tanda Terima
+                </Button>
+              </div>
+
+              {/* Card 2: Notary to Client */}
+              <div className="p-6 rounded-[2rem] border border-slate-150 bg-slate-50/40 hover:bg-white hover:border-slate-300 hover:shadow-xl hover:shadow-slate-500/5 transition-all flex flex-col gap-6">
+                <div className="flex items-start justify-between gap-4">
+                  <div className="space-y-1">
+                    <span className="text-[10px] font-black text-emerald-600 uppercase tracking-[0.15em]">Tipe B</span>
+                    <h3 className="font-black text-slate-800 text-md tracking-tight leading-tight">Pengembalian: Notaris → Klien</h3>
+                    <p className="text-xs text-slate-400 font-medium">Dokumen dikembalikan kembali ke klien</p>
+                  </div>
+                  <Badge className={`px-3 py-1 rounded-full font-bold text-[10px] tracking-wide border ${
+                    consultation.toClientStatus === 'RECEIVED' 
+                      ? 'bg-emerald-50 text-emerald-600 border-emerald-200' 
+                      : 'bg-amber-50 text-amber-600 border-amber-200'
+                  }`}>
+                    {consultation.toClientStatus === 'RECEIVED' ? 'Diterima Customer' : 'Menunggu'}
+                  </Badge>
+                </div>
+
+                <div className="space-y-4 pt-4 border-t border-slate-100">
+                  <div className="w-full">
+                    <CustomSelect
+                      label="Status Terima"
+                      options={clientHandoverOptions}
+                      value={consultation.toClientStatus || 'PENDING'}
+                      onChange={(val) => handleUpdateHandoverStatus('NOTARY_TO_CLIENT', val)}
+                    />
+                  </div>
+
+                  {consultation.toClientStatus === 'RECEIVED' && (
+                    <div className="text-xs space-y-1 text-slate-500 font-medium bg-slate-100/60 p-3 rounded-xl">
+                      <p>Tanggal Diterima:</p>
+                      <p className="font-bold text-slate-700">
+                        {consultation.toClientDate 
+                          ? new Date(consultation.toClientDate).toLocaleDateString('id-ID', { day: 'numeric', month: 'long', year: 'numeric', hour: '2-digit', minute: '2-digit' })
+                          : '-'}
+                      </p>
+                    </div>
+                  )}
+
+                  {/* Proof Upload / Display */}
+                  <div className="space-y-2">
+                    <span className="text-[10px] font-black text-slate-400 uppercase tracking-wider">Bukti Serah Terima</span>
+                    {consultation.toClientProof ? (
+                      <div className="flex items-center justify-between p-3 rounded-2xl bg-emerald-50/50 border border-emerald-200 text-emerald-800">
+                        <div className="flex items-center gap-2 min-w-0">
+                          <CheckCircle className="h-4 w-4 text-emerald-600 shrink-0" />
+                          <span className="text-xs font-bold truncate">File Bukti Terunggah</span>
+                        </div>
+                        <div className="flex items-center gap-1 shrink-0">
+                          <Button 
+                            variant="ghost" 
+                            size="sm" 
+                            onClick={() => handlePreview(consultation.toClientProof)}
+                            className="h-8 px-2 rounded-xl text-xs font-bold text-emerald-600 hover:text-emerald-700 hover:bg-emerald-100/50"
+                          >
+                            <Eye className="h-3.5 w-3.5" />
+                          </Button>
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => handleUpdateHandoverStatus('NOTARY_TO_CLIENT', 'RECEIVED', consultation.toClientDate, null)}
+                            className="h-8 px-2 rounded-xl text-xs font-bold text-red-500 hover:text-red-600 hover:bg-red-50"
+                          >
+                            Hapus
+                          </Button>
+                        </div>
+                      </div>
+                    ) : (
+                      <div className="relative">
+                        <input
+                          type="file"
+                          id="upload-to-client"
+                          className="hidden"
+                          accept="image/*,application/pdf"
+                          onChange={(e) => {
+                            const file = e.target.files?.[0];
+                            if (file) handleUploadHandoverProof('NOTARY_TO_CLIENT', file);
+                          }}
+                          disabled={uploadingHandover !== null}
+                        />
+                        <label
+                          htmlFor="upload-to-client"
+                          className="flex flex-col items-center justify-center p-4 border border-dashed border-slate-200 rounded-2xl cursor-pointer hover:bg-slate-100/50 transition-colors"
+                        >
+                          {uploadingHandover === 'toClient' ? (
+                            <Loader2 className="h-5 w-5 text-indigo-500 animate-spin" />
+                          ) : (
+                            <>
+                              <Upload className="h-4 w-4 text-slate-400 mb-1" />
+                              <span className="text-[10px] font-bold text-slate-500 uppercase tracking-wider">Unggah Bukti (PDF/Gambar)</span>
+                            </>
+                          )}
+                        </label>
+                      </div>
+                    )}
+                  </div>
+                </div>
+
+                <Button 
+                  onClick={() => handleDownloadHandoverPdf('NOTARY_TO_CLIENT')}
+                  className="w-full h-11 mt-auto rounded-2xl bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs gap-2 shadow-lg shadow-emerald-600/10 transition-all cursor-pointer"
+                >
+                  <Printer className="h-4 w-4" /> Cetak Tanda Terima
+                </Button>
+              </div>
             </div>
           </section>
 

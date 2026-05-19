@@ -64,6 +64,7 @@ export default function CreateInvoicePage() {
   // Selection States
   const [clients, setClients] = useState<ClientData[]>([]);
   const [deeds, setDeeds] = useState<DeedData[]>([]);
+  const [serviceRequests, setServiceRequests] = useState<any[]>([]);
   const [selectedClientId, setSelectedClientId] = useState<string>("");
   const [selectedDeedId, setSelectedDeedId] = useState<string>("");
   const [isDeedLinked, setIsDeedLinked] = useState<boolean>(false);
@@ -83,18 +84,21 @@ export default function CreateInvoicePage() {
 
     const fetchLookups = async () => {
       try {
-        const [resClient, resDeeds] = await Promise.all([
+        const [resClient, resDeeds, resSR] = await Promise.all([
           fetch(`/api/clients?tenantId=${tenantId}`, { headers: { Authorization: `Bearer ${session.backendToken}` } }),
-          fetch(`/api/deeds?tenantId=${tenantId}`, { headers: { Authorization: `Bearer ${session.backendToken}` } })
+          fetch(`/api/deeds?tenantId=${tenantId}`, { headers: { Authorization: `Bearer ${session.backendToken}` } }),
+          fetch(`/api/service-requests?tenantId=${tenantId}`, { headers: { Authorization: `Bearer ${session.backendToken}` } })
         ]);
 
         const clientData = await resClient.json();
         const deedData = await resDeeds.json();
+        const srData = await resSR.json();
 
         if (clientData.success) setClients(clientData.data);
         if (deedData.success) setDeeds(deedData.data);
+        if (srData.success) setServiceRequests(srData.data);
       } catch (err) {
-        toast.error("Gagal memuat list Klien & Akta");
+        toast.error("Gagal memuat list Klien, Akta & Konsultasi");
       }
     };
 
@@ -121,6 +125,62 @@ export default function CreateInvoicePage() {
 
   const selectedClient = useMemo(() => clients.find(c => c.id === selectedClientId), [clients, selectedClientId]);
   const selectedDeed = useMemo(() => deeds.find(d => d.id === selectedDeedId), [deeds, selectedDeedId]);
+
+  const matchingConsultation = useMemo(() => {
+    if (isDeedLinked && selectedDeedId) {
+      const deed = deeds.find((d: any) => d.id === selectedDeedId);
+      if (deed?.serviceRequestId) {
+        return serviceRequests.find(sr => sr.id === deed.serviceRequestId);
+      }
+    }
+    if (selectedClientId) {
+      return serviceRequests.find(sr => sr.clientId === selectedClientId);
+    }
+    return null;
+  }, [isDeedLinked, selectedDeedId, selectedClientId, deeds, serviceRequests]);
+
+  const loadConsultationCosts = (sr: any) => {
+    const parsedItems: LineItem[] = [];
+
+    const category = sr.serviceCategory || "NON_AKTA";
+    let baseAmount = 1000000;
+    if (category === "AKTA") baseAmount = 5000000;
+    else if (category === "PPAT") baseAmount = 7500000;
+
+    parsedItems.push({
+      id: "base-" + Date.now(),
+      description: `Biaya Jasa Dasar (${category.replace('_', ' ')})`,
+      amount: baseAmount,
+      isTaxable: true,
+    });
+
+    if (sr.additionalJobs) {
+      const jobsList = sr.additionalJobs.split(/,\s+/);
+      jobsList.forEach((jobStr: string, idx: number) => {
+        const match = jobStr.match(/(.+?)\s*\(Rp\s*([\d.]+)\)/i);
+        if (match) {
+          const name = match[1].trim();
+          const price = parseFloat(match[2].replace(/\./g, '')) || 0;
+          parsedItems.push({
+            id: `job-${idx}-${Date.now()}`,
+            description: name,
+            amount: price,
+            isTaxable: true,
+          });
+        } else if (jobStr.trim()) {
+          parsedItems.push({
+            id: `job-${idx}-${Date.now()}`,
+            description: jobStr.trim(),
+            amount: 0,
+            isTaxable: true,
+          });
+        }
+      });
+    }
+
+    setItems(parsedItems);
+    toast.success("Rincian biaya berhasil dimuat dari kesepakatan biaya!");
+  };
 
   const subtotal = useMemo(() => items.reduce((sum, item) => sum + item.amount, 0), [items]);
   const taxableAmount = useMemo(() => items.filter(i => i.isTaxable).reduce((sum, item) => sum + item.amount, 0), [items]);
@@ -392,6 +452,32 @@ export default function CreateInvoicePage() {
             </div>
 
           </div>
+
+          {matchingConsultation && (
+            <div className="bg-indigo-50/60 border border-indigo-100/80 rounded-3xl p-6 flex flex-col md:flex-row items-start md:items-center justify-between gap-4 text-indigo-900 animate-in fade-in slide-in-from-top-4 duration-300">
+              <div className="flex items-start gap-4">
+                <div className="h-12 w-12 rounded-2xl bg-indigo-100 text-indigo-600 flex items-center justify-center shrink-0">
+                  <Receipt className="h-6 w-6" />
+                </div>
+                <div>
+                  <p className="text-[10px] font-black uppercase tracking-widest text-indigo-600">Kesepakatan Biaya Ditemukan</p>
+                  <p className="text-base font-bold text-slate-800 mt-0.5">
+                    {matchingConsultation.description || `Layanan ${matchingConsultation.serviceCategory}`}
+                  </p>
+                  <p className="text-xs font-semibold text-indigo-500 mt-1">
+                    Estimasi Biaya: {formatIDR(matchingConsultation.estimatedCost)}
+                  </p>
+                </div>
+              </div>
+              <Button
+                type="button"
+                onClick={() => loadConsultationCosts(matchingConsultation)}
+                className="bg-indigo-600 hover:bg-indigo-700 text-white font-bold px-6 h-11 shadow-[0_4px_20px_rgb(79,70,229,0.15)] hover:shadow-[0_4px_20px_rgb(79,70,229,0.3)] transition-all border-0 rounded-xl shrink-0"
+              >
+                Muat Rincian Biaya
+              </Button>
+            </div>
+          )}
 
           <Card className="border-0 shadow-sm bg-white overflow-hidden rounded-3xl ring-1 ring-slate-100">
             <CardHeader className="bg-slate-50/50 border-b border-slate-50 p-5 flex flex-row items-center justify-between">
