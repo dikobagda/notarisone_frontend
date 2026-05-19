@@ -121,12 +121,12 @@ export default function BackofficeDashboard() {
                 </div>
               ))}
             </div>
-            <Button variant="ghost" className="w-full mt-6 text-orange-600 font-bold hover:bg-orange-50" asChild>
-              <a href="/backoffice/tenants">
+            <a href="/backoffice/tenants" className="w-full mt-6 block">
+              <Button variant="ghost" className="w-full text-orange-600 font-bold hover:bg-orange-50">
                 Kelola Semua Tenant
                 <ArrowUpRight className="ml-2 h-4 w-4" />
-              </a>
-            </Button>
+              </Button>
+            </a>
           </CardContent>
         </Card>
 
